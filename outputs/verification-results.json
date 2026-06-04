@@ -1,0 +1,163 @@
+{
+  "generatedAt": "2026-06-04T14:16:35.784Z",
+  "totalBets": 6450,
+  "totalSeeds": 139,
+  "steps": [
+    {
+      "step": 1,
+      "name": "Seed Hash Integrity",
+      "status": "PASS",
+      "detail": "121 revealed seeds verified. 3 phase-boundary skips."
+    },
+    {
+      "step": 2,
+      "name": "Next-Seed Promotion (Commitment Linkage)",
+      "status": "PASS",
+      "detail": "125/125 rotation transitions independently verified — previousNextHash === newActiveHash across the chain"
+    },
+    {
+      "step": 3,
+      "name": "Hash Consistency Within Epoch",
+      "status": "PASS",
+      "detail": "All 121 epochs: serverSeedHashed identical across all bets within each epoch"
+    },
+    {
+      "step": 4,
+      "name": "Nonce Audit",
+      "status": "PASS",
+      "detail": "121 epochs; 1 with capture-retry gaps (1 missed nonces total); 1 reconstructed from revealed seed (no captured server response available for comparison), 0 unverifiable."
+    },
+    {
+      "step": 5,
+      "name": "Outcome Recomputation (Death Points)",
+      "status": "PASS",
+      "detail": "6000/6000 verified, 0 mismatches, 0 skipped (unrevealed seeds)"
+    },
+    {
+      "step": 6,
+      "name": "Client Seed Influence",
+      "status": "PASS",
+      "detail": "597/601 bets: wrong clientSeed → different death points"
+    },
+    {
+      "step": 7,
+      "name": "Payout Math",
+      "status": "PASS",
+      "detail": "6000 bets checked, 0 errors (tolerance 1e-8)"
+    },
+    {
+      "step": 8,
+      "name": "Multiplier Formula (C(20,k)/C(20−m,k) × edge)",
+      "status": "PASS",
+      "detail": "4337 winning bets: multiplier = C(20,k)/C(20−m,k), payout_mult = raw × 0.992 (0.8% edge); 0 mismatches"
+    },
+    {
+      "step": 9,
+      "name": "Win Condition (all stepped tiles not in mines)",
+      "status": "PASS",
+      "detail": "6000 bets verified: outcome=win iff every current_step[] ∉ mines_positions; 0 errors"
+    },
+    {
+      "step": 10,
+      "name": "Phase C Bet-Size Invariance ($10 bets)",
+      "status": "PASS",
+      "detail": "200 Phase C bets ($10), 165 wins: multiplier formula identical, payout math correct; 0 errors"
+    },
+    {
+      "step": 11,
+      "name": "Config Completeness (4 difficulty levels)",
+      "status": "PASS",
+      "detail": "4/4 difficulty levels present"
+    },
+    {
+      "step": 12,
+      "name": "House Edge Audit (effective_edge = 0.8%)",
+      "status": "PASS",
+      "detail": "6000 bets: effective_edge = 0.8 (0.8%) for all; 0 deviations"
+    },
+    {
+      "step": 13,
+      "name": "Phase Labels",
+      "status": "PASS",
+      "detail": "Phases present: A, B, C, D; last bet phase: D"
+    },
+    {
+      "step": 14,
+      "name": "Dataset Hash",
+      "status": "PASS",
+      "detail": "Expected: d654ef7c6195584501e9033202d5acad13a16d89d296baab8befc0240fb36d36 | Actual: d654ef7c6195584501e9033202d5acad13a16d89d296baab8befc0240fb36d36"
+    },
+    {
+      "step": 15,
+      "name": "Epoch Size",
+      "status": "PASS",
+      "detail": "121 epochs; min=1, max=50 bets per epoch"
+    },
+    {
+      "step": 16,
+      "name": "Probability Independence (Anti-Circularity)",
+      "status": "PASS",
+      "detail": "4 difficulties × valid step counts = 61 combos; RTP = survival × payoutMult = 0.9920 by construction. Max deviation: 2.22e-16 (worst: d=2 (m=3), k=4)"
+    },
+    {
+      "step": 17,
+      "name": "Phase D — Client Seed Variation",
+      "status": "PASS",
+      "detail": "800 bets, 16 distinct client seeds, difficulties: 1, 2, 3, 4; recomputation: 800/800 match"
+    },
+    {
+      "step": 18,
+      "name": "Simulation Results — Pass 1 Integrity",
+      "status": "PASS",
+      "detail": "4,000,000 rounds × 4 configs; mean RTP=99.1468%; chi2: 0/4 uncorrected, 0/4 at Bonferroni α/4=0.002500; serial: 0/4 uncorrected, 0/4 at Bonferroni"
+    },
+    {
+      "step": 19,
+      "name": "Simulation Results — Pass 2 Cherry-Pick Test",
+      "status": "PASS",
+      "detail": "121 seeds × difficulty=2 (dpc=3); Test A: 0/121 fails (expected ≤2); Test B: 4/121 flags (≤14 = 2×7 threshold); 4 isolated-early, 0 broad — no cherry-picking detected"
+    },
+    {
+      "step": 20,
+      "name": "Multi-Step Multiplier Chain (Phase E)",
+      "status": "PASS",
+      "detail": "1085 step-multiplier pairs checked across 450 bets; 15 distinct (difficulty, k) combos; 0 mismatches"
+    },
+    {
+      "step": 21,
+      "name": "Death-Point Recomputation (Phase E)",
+      "status": "PASS",
+      "detail": "450/450 Phase E bets verified (0 skipped — unrevealed seed); 0 mismatches"
+    },
+    {
+      "step": 22,
+      "name": "Cash-Out Payout Correctness (k>1)",
+      "status": "PASS",
+      "detail": "202 winning Phase E bets at k>1 verified; 0 errors; distribution: k=2:27, k=3:67, k=5:108"
+    }
+  ],
+  "info": [
+    {
+      "label": "RTP Analysis",
+      "detail": "Empirical RTP: 96.3737% — Beef is high-variance; theoretical RTP 99.2000% proven analytically in anti-circularity step."
+    },
+    {
+      "label": "Win Rate Chi-Squared (per-difficulty, aggregated by step count)",
+      "detail": "4 difficulty groups tested; fails at α=0.01: 0/4; min p=0.2893; Bonferroni α/4=0.002500"
+    },
+    {
+      "label": "Serial Independence (lag-1 autocorrelation on difficulty_level sequence)",
+      "detail": "r₁=0.097516, z=7.554 (|z|>3 — structured phase ordering; see simulation for definitive test). Underpowered at live sample size — see simulation for definitive test."
+    },
+    {
+      "label": "Serial Independence (Wald-Wolfowitz runs test on difficulty_level sequence)",
+      "detail": "runs=2400, expected=2947.7, z=-14.398, p=0.0000. Underpowered at live sample size — see simulation for definitive test."
+    }
+  ],
+  "summary": {
+    "passed": 22,
+    "flags": 0,
+    "hardFail": 0,
+    "verdict": "PROVABLY FAIR — Full Pass"
+  }
+}

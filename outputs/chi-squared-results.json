@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-06-04T14:16:35.785Z",
+  "groups": [
+    {
+      "difficulty": 1,
+      "wins": 1132,
+      "expWins": 1140.0000000000257,
+      "total": 1200,
+      "pValue": 0.2893148323803413
+    },
+    {
+      "difficulty": 2,
+      "wins": 1198,
+      "expWins": 1190.0000000000016,
+      "total": 1400,
+      "pValue": 0.5493162990847905
+    },
+    {
+      "difficulty": 3,
+      "wins": 903,
+      "expWins": 900,
+      "total": 1200,
+      "pValue": 0.8414805811217938
+    },
+    {
+      "difficulty": 4,
+      "wins": 1104,
+      "expWins": 1100,
+      "total": 2200,
+      "pValue": 0.864569301686742
+    }
+  ]
+}

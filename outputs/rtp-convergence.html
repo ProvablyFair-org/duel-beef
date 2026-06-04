@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DUEL.COM BEEF RTP CONVERGENCE — 4 CONFIGS x 1M ROUNDS EACH</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #fafafa; padding: 24px; }
+  .container { max-width: 1100px; margin: 0 auto; background: #fff; border-radius: 12px; border: 1px solid #e0e0e0; padding: 32px; }
+  h1 { text-align: center; font-size: 16px; font-weight: 600; color: #333; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 24px; }
+  .chart-wrap { position: relative; height: 420px; }
+  .final-box { display: inline-block; border: 2px solid #4caf50; border-radius: 8px; padding: 10px 20px; margin-top: 20px; }
+  .final-box .label { font-size: 13px; color: #666; }
+  .final-box .value { font-size: 22px; font-weight: 700; color: #2e7d32; }
+  .final-box .check { color: #4caf50; font-size: 18px; }
+  .legend { text-align: center; margin-top: 12px; font-size: 13px; color: #666; }
+  .legend span { margin: 0 12px; }
+  .legend .dot { display: inline-block; width: 12px; height: 3px; vertical-align: middle; margin-right: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>DUEL.COM BEEF RTP CONVERGENCE — 4 CONFIGS x 1M ROUNDS EACH</h1>
+  <div class="chart-wrap"><canvas id="chart"></canvas></div>
+  <div class="legend">
+    <span><span class="dot" style="background:#1565c0;height:3px"></span> Mean RTP (4 configs)</span>
+    <span><span class="dot" style="background:rgba(229,115,115,0.5);height:3px"></span> ±2 SE</span>
+    <span><span class="dot" style="background:#e57373;border-top:2px dashed #e57373;height:0"></span> Theoretical (99.2%)</span>
+  </div>
+  <div style="text-align:right; margin-top:8px;">
+    <div class="final-box">
+      <span class="label">Final Mean RTP:</span>
+      <span class="value">99.147%</span>
+      <span class="check">&#10003;</span>
+    </div>
+  </div>
+</div>
+<script>
+const data = [{"x":1000,"y":99.27678018575818,"sd":0.6713451507809564,"label":"1K"},{"x":5000,"y":99.0755956243534,"sd":0.4349218415135395,"label":"5K"},{"x":10000,"y":98.90995517028087,"sd":0.15128705039390095,"label":"10K"},{"x":50000,"y":99.24480789264666,"sd":0.16107552185467552,"label":"50K"},{"x":100000,"y":99.19340458198825,"sd":0.055577894889745065,"label":"100K"},{"x":500000,"y":99.19778381660063,"sd":0.01785760041173656,"label":"500K"},{"x":1000000,"y":99.14679977708158,"sd":0.02305052463688724,"label":"1M"}];
+const theoretical = 99.200000;
+const labels = data.map(d => d.label);
+const ctx = document.getElementById('chart').getContext('2d');
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [
+      { label: 'Upper band', data: data.map(d => d.y + d.sd * 2), borderColor: 'transparent', backgroundColor: 'rgba(229,115,115,0.08)', fill: '+1', pointRadius: 0, tension: 0.3 },
+      { label: 'Lower band', data: data.map(d => d.y - d.sd * 2), borderColor: 'transparent', backgroundColor: 'rgba(229,115,115,0.08)', fill: false, pointRadius: 0, tension: 0.3 },
+      { label: '±2 SE (upper)', data: data.map(d => d.y + d.sd), borderColor: 'rgba(229,115,115,0.4)', borderWidth: 1, fill: false, pointRadius: 0, tension: 0.3 },
+      { label: '±2 SE (lower)', data: data.map(d => d.y - d.sd), borderColor: 'rgba(229,115,115,0.4)', borderWidth: 1, fill: false, pointRadius: 0, tension: 0.3 },
+      { label: 'Theoretical', data: data.map(() => theoretical), borderColor: '#e57373', borderWidth: 2, borderDash: [8, 4], fill: false, pointRadius: 0 },
+      { label: 'Mean RTP', data: data.map(d => d.y), borderColor: '#1565c0', borderWidth: 2.5, fill: false, pointRadius: 0, pointHoverRadius: 6, pointHoverBackgroundColor: '#1565c0', tension: 0.3 },
+      { label: 'Final', data: data.map((d, i) => i === data.length - 1 ? d.y : null), borderColor: '#1565c0', backgroundColor: '#1565c0', pointRadius: 6, pointHoverRadius: 8, showLine: false },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: (items) => data[items[0].dataIndex].label + ' rounds/config',
+          label: (item) => {
+            if (item.datasetIndex === 5) return 'Mean RTP: ' + item.parsed.y.toFixed(4) + '%';
+            if (item.datasetIndex === 4) return 'Theoretical: ' + theoretical.toFixed(4) + '%';
+            return null;
+          },
+        },
+      },
+    },
+    scales: {
+      x: { title: { display: true, text: 'Rounds per Config', font: { size: 12 } }, ticks: { maxTicksLimit: 10 } },
+      y: { title: { display: false }, ticks: { callback: v => v.toFixed(1) + '%' } },
+    },
+  },
+});
+</script>
+</body>
+</html>

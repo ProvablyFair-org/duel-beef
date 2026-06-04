@@ -1,0 +1,17 @@
+{
+  "name": "duel-beef-audit",
+  "version": "1.0.0",
+  "description": "Provably fair audit — Duel.com Beef (cross-road)",
+  "scripts": {
+    "test": "mocha && npm run simulate && npm run verify",
+    "verify": "ts-node tests/verify.ts",
+    "simulate": "ts-node src/simulate.ts"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10",
+    "@types/node": "^22",
+    "mocha": "^11",
+    "ts-node": "^10",
+    "typescript": "^5"
+  }
+}
