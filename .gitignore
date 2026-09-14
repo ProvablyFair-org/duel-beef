@@ -4,3 +4,6 @@ outputs/*.json
 !outputs/.gitkeep
 !outputs/rtp-convergence.html
 .DS_Store
+
+# run products — this verifier writes them fresh each run; the committed artifacts are pinned
+outputs/run/

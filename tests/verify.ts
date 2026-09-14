@@ -138,20 +138,27 @@ fs.writeFileSync(path.join(outputsDir, 'verification-results.json'), JSON.string
   summary:     { passed, flags, hardFail, verdict },
 }, null, 2));
 
-fs.writeFileSync(path.join(outputsDir, 'determinism-log.json'), JSON.stringify({
+// RUN PRODUCTS, not artifacts of record. These are derived wholly from THIS run, yet they
+// were written on top of the committed copies — so the verifier replaced the very evidence
+// it scores, a forged copy was overwritten rather than detected, and the committed bytes
+// drifted on every run. Bar item 3: verification does not rewrite the evidence it scores.
+const runDir = path.join(outputsDir, 'run');
+fs.mkdirSync(runDir, { recursive: true });
+fs.writeFileSync(path.join(runDir, 'determinism-log.json'), JSON.stringify({
   generatedAt: new Date().toISOString(),
   verified:    bets.length - ctx.step5Skipped,
   mismatches:  ctx.step5Mismatches,
   skipped:     ctx.step5Skipped,
 }, null, 2));
 
-fs.writeFileSync(path.join(outputsDir, 'chi-squared-results.json'), JSON.stringify({
+fs.writeFileSync(path.join(runDir, 'chi-squared-results.json'), JSON.stringify({
   generatedAt: new Date().toISOString(),
   groups:      ctx.chiResultsLog,
 }, null, 2));
 
 console.log(`  Outputs written to: outputs/verification-results.json`);
-console.log(`  Outputs written to: outputs/determinism-log.json`);
-console.log(`  Outputs written to: outputs/chi-squared-results.json`);
+console.log(`  Run products written to: outputs/run/determinism-log.json`);
+console.log(`  Run products written to: outputs/run/chi-squared-results.json`);
+console.log(`  Committed artifacts NOT modified.`);
 
 if (hardFail > 0) process.exit(1);
