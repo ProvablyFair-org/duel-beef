@@ -4,7 +4,10 @@
 
 import type { StepResult } from './context';
 import { step, VerifyContext } from './context';
-import { checkDatasetHash } from '../../src/loader';
+import {
+  checkDatasetHash,
+  EXPECTED_BETS, EXPECTED_SEEDS, EXPECTED_PHASE_BETS,
+} from '../../src/loader';
 import {
   theoreticalMultiplier,
   survivalProbability,
@@ -21,9 +24,29 @@ export function run(ctx: VerifyContext): StepResult[] {
   const phases    = new Set(bets.map(b => b.phase));
   const hasAll    = (['A', 'B', 'C', 'D'] as const).every(p => phases.has(p));
   const lastPhase = bets[bets.length - 1].phase;
-  const s13 = step(13, 'Phase Labels',
-    hasAll && lastPhase === 'D' ? 'PASS' : 'FLAG',
-    `Phases present: ${[...phases].sort().join(', ')}; last bet phase: ${lastPhase}`,
+  // Bound to CODE constants in src/loader.ts, never to the dataset's own header. A dataset
+  // that disagrees with the capture plan fails here even when its hash pin has been updated
+  // to match it. FLAG was the wrong verdict: it exits 0, so a shrunken capture still passed.
+  const phaseCounts: Record<string, number> = {};
+  for (const b of bets) phaseCounts[b.phase] = (phaseCounts[b.phase] ?? 0) + 1;
+  const phaseBad = Object.entries(EXPECTED_PHASE_BETS)
+    .filter(([p, n]) => (phaseCounts[p] ?? 0) !== n)
+    .map(([p, n]) => `${p}: ${phaseCounts[p] ?? 0} != ${n}`);
+  const extraPhases = Object.keys(phaseCounts).filter(p => !(p in EXPECTED_PHASE_BETS));
+  const betsOk  = bets.length === EXPECTED_BETS;
+  const seedsOk = ctx.seeds.length === EXPECTED_SEEDS;
+  const popOk   = betsOk && seedsOk && phaseBad.length === 0 && extraPhases.length === 0;
+
+  const s13 = step(13, 'Population & Phase Labels',
+    popOk && hasAll && lastPhase === 'D' ? 'PASS' : 'FAIL',
+    `${bets.length}/${EXPECTED_BETS} bets and ${ctx.seeds.length}/${EXPECTED_SEEDS} seed records ` +
+    `against the capture plan in src/loader.ts (code constants, not the dataset header); ` +
+    `per phase ${Object.entries(EXPECTED_PHASE_BETS).map(([p, n]) => `${p}=${phaseCounts[p] ?? 0}/${n}`).join(' ')}; ` +
+    `last bet phase: ${lastPhase}` +
+    (betsOk ? '' : '; BET COUNT MISMATCH') +
+    (seedsOk ? '' : '; SEED COUNT MISMATCH') +
+    (phaseBad.length ? `; PHASE MISMATCH ${phaseBad.join(', ')}` : '') +
+    (extraPhases.length ? `; UNDECLARED PHASE ${extraPhases.join(', ')}` : ''),
   );
 
   // ── Step 14: Dataset hash ─────────────────────────────────────────────────────

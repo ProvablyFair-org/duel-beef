@@ -19,6 +19,7 @@ import * as statistical from './steps/statistical';
 import * as dataset     from './steps/dataset';
 import * as simulation  from './steps/simulation';
 import * as multireveal from './steps/multireveal';
+import * as artifacts   from './steps/artifacts';
 
 // ── Pre-flight: dataset hash ───────────────────────────────────────────────────
 
@@ -88,6 +89,7 @@ const results = [
   ...payouts.run(ctx),                       // Steps  7–12
   ...dataset.run(ctx),                       // Steps 13–17
   ...simulation.run(ctx),                    // Steps 18–19
+  ...artifacts.run(ctx),    // Step 23
   ...multireveal.run(phaseEBets, seedMap),   // Steps 20–22 (Phase E)
 ];
 

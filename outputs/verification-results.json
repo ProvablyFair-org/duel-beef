@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-04T14:16:35.784Z",
+  "generatedAt": "2026-09-14T19:50:12.429Z",
   "totalBets": 6450,
   "totalSeeds": 139,
   "steps": [
@@ -77,9 +77,9 @@
     },
     {
       "step": 13,
-      "name": "Phase Labels",
+      "name": "Population & Phase Labels",
       "status": "PASS",
-      "detail": "Phases present: A, B, C, D; last bet phase: D"
+      "detail": "6000/6000 bets and 125/125 seed records against the capture plan in src/loader.ts (code constants, not the dataset header); per phase A=4000/4000 B=1000/1000 C=200/200 D=800/800; last bet phase: D"
     },
     {
       "step": 14,
@@ -116,6 +116,12 @@
       "name": "Simulation Results — Pass 2 Cherry-Pick Test",
       "status": "PASS",
       "detail": "121 seeds × difficulty=2 (dpc=3); Test A: 0/121 fails (expected ≤2); Test B: 4/121 flags (≤14 = 2×7 threshold); 4 isolated-early, 0 broad — no cherry-picking detected"
+    },
+    {
+      "step": 23,
+      "name": "Artifact Integrity (pinned artifacts of record)",
+      "status": "PASS",
+      "detail": "2 artifact(s) checked against src/artifact-pins.ts; rtp-convergence.html matches its pin; simulation-results.json matches its pin"
     },
     {
       "step": 20,
@@ -155,7 +161,7 @@
     }
   ],
   "summary": {
-    "passed": 22,
+    "passed": 23,
     "flags": 0,
     "hardFail": 0,
     "verdict": "PROVABLY FAIR — Full Pass"

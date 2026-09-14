@@ -74,3 +74,14 @@ export function groupByHash(bets: BeefGame[]): Map<string, BeefGame[]> {
   }
   return m;
 }
+
+// ── POPULATION OF RECORD ─────────────────────────────────────────────────────────
+// The capture plan, stated as CODE so a shrunken dataset cannot pass by agreeing with
+// itself. Deleting rounds and doctoring the header to match leaves a file that is
+// internally consistent and re-pins cleanly — and re-pinning is exactly what a forger
+// does, so EXPECTED_HASH cannot see it. The counts have to be asserted from somewhere
+// the dataset does not control, and a step that finds them wrong must HARD FAIL.
+export const EXPECTED_BETS  = 6000;
+export const EXPECTED_SEEDS = 125;
+export const EXPECTED_PHASE_BETS: Readonly<Record<string, number>> =
+  Object.freeze({ A: 4000, B: 1000, C: 200, D: 800 });
