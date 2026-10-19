@@ -1,0 +1,66 @@
+{
+  "auditId": "PF-2026-DL06",
+  "game": "beef",
+  "casino": "duel",
+  "release": "v1.1.0",
+  "framework": "1.1",
+  "simulation": {
+    "seeding": "pinned",
+    "seedSource": "src/simulate.ts SIM_SEEDS (one server/client pair per difficulty)",
+    "attestation": "Steps 18-19 read the pinned artifact on every npm test (hash-checked by Step 23; p-values read, not re-derived — MANIFEST.md DL-6); npm run test:full regenerates the simulation into outputs/run/ and field-diffs it against the pinned artifact at the reproduction tolerance (outputs/run/diff.json)"
+  },
+  "runtime": {
+    "command": "npm test",
+    "measured": [
+      {
+        "date": "2026-09-28",
+        "machine": "Apple M2 Max",
+        "cores": 12,
+        "node": "22.23.1",
+        "wallSeconds": 37.39,
+        "by": "time npm test"
+      }
+    ]
+  },
+  "datasetSha256": "d654ef7c6195584501e9033202d5acad13a16d89d296baab8befc0240fb36d36",
+  "artifacts": {
+    "data/beef-master-6000bets.json": "d654ef7c6195584501e9033202d5acad13a16d89d296baab8befc0240fb36d36",
+    "data/beef-phaseE-450bets.json": "ef39d7f584cdb6d8057e846cdcb9b4ffcc60495bfcce8443d15bb910a9c51001",
+    "outputs/simulation-results.json": "d49f95a23cbd3d6839761fdefc19c3ffa4103a42bd2b892eb7511a54ea5af358",
+    "outputs/chi-squared-results.json": "65857a46ab1d0d4acfe0c46ceaa264f22a112358895643160bc5605310451ca0",
+    "outputs/determinism-log.json": "88bc153e2d6e867f375c0cf8138491185761cdb3150e4c921a0746ecf5a7b3c2",
+    "outputs/rtp-convergence.html": "2633e8f87d9ed124b1c32c604c25291108ee5af775f8e2405e0ef3538e97d066",
+    "outputs/verification-results.json": "c6af5d6402e2f4379226e5c3521ed18dc396fa463ab8587fb429bc469ed08e82",
+    "outputs/rtp-claim-table.json": "0ad7bc6da3da63a172c17241c67b249ede06ce21cf32917c4266da2957f354de"
+  },
+  "verdict": "PROVABLY FAIR — Full Pass",
+  "scored": {
+    "passed": 24,
+    "flags": 1,
+    "operatorFlags": 0,
+    "captureFlags": 1,
+    "hardFail": 0,
+    "of": 25
+  },
+  "capturedAt": {
+    "from": "2026-04-16T18:49:34.137Z",
+    "to": "2026-04-21T15:54:58.815Z"
+  },
+  "environment": {
+    "host": "duel.com",
+    "stage": "production",
+    "qualifier": null
+  },
+  "supersedes": "v1.0.0",
+  "signature": "SHA256:gEujiJm2pRyq7lQsfYQfQ1r97H/J7GdaKHbOW8GtikY",
+  "falsifiability": {
+    "registry": "tests/mutations.json",
+    "runner": "scripts/mutate.mjs",
+    "mutations": 46,
+    "killed": 46,
+    "scoredStepsCovered": "25/25",
+    "declaredSurvivors": 0,
+    "source": "npm run mutate 2026-10-14 evening, the whole registry (46 entries) in one run on the tree carrying the FIXPASS2 C3 entries (Apple M2 Max, 12 cores, node v22.23.1; baseline verify exit 0, mocha exit 0, PROVABLY FAIR — Full Pass, no operator-origin FLAG): \"46/46 mutations killed\", \"25/25 scored steps have a mutation that kills them\"; 2026-10-15 --only M16, MC3: 5/5 killed, MC3a/MC3b exit 5"
+  },
+  "pending": ""
+}

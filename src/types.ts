@@ -1,6 +1,6 @@
 /**
  * Duel.com Beef (cross-road) — type definitions.
- * Matches the actual capture output from capture/beef-capture.js.
+ * Matches the actual capture output of the capture script (methodology: capture/beef-capture.reference.js).
  */
 
 export type Phase = 'A' | 'B' | 'C' | 'D' | 'E1' | 'E2' | 'E3' | 'E4';
@@ -40,7 +40,7 @@ export interface BeefGame {
     amount_won: string;
     amount_currency: string;
     transaction_id: number;
-    effective_edge: number;           // 0.8 for standard account (no rakeback on cross_road)
+    effective_edge: number;           // 0.8 on every captured bet (no rakeback applied to the captured bets)
     cashed_out?: boolean;             // Phase E only: true if multi-step game was cashed out
     reached_k?: number;               // Phase E only: how many steps were taken
   };
@@ -87,8 +87,26 @@ export interface BeefDataset {
 export interface StepResult {
   step: number;
   name: string;
-  status: 'PASS' | 'FLAG' | 'FAIL';
+  /** INFO: an informational step's deviation (profile policy INFORMATIONAL — the live-sample fit, Mike
+   *  2026-09-29): reported, never counted as a flag, never affects the verdict. */
+  status: 'PASS' | 'FLAG' | 'FAIL' | 'INFO';
   detail: string;
+  /**
+   * Machine-readable measurements for this step. A measured float belongs here and
+   * never inside `detail`: the reproduction gate compares the committed artifact with
+   * a fresh run field by field, and a string leaf can only be compared for equality.
+   * A float rendered into prose therefore disagrees forever on any machine whose libm
+   * differs by a unit in the last place, which is precisely the reader the gate exists
+   * for. `detail` states the BOUND; `data` carries the measurement.
+   */
+  data?: Record<string, unknown>;
+  /**
+   * 'capture' marks a FLAG raised by the AUDITOR'S capture (a retried request that left a nonce
+   * gap), not by anything the operator served. It is disclosed on every run but is
+   * verdict-neutral: the verdict stays Full Pass and the exit status 0. Only an operator-origin
+   * FLAG downgrades to Conditional Pass. Same rule as Duel plinko (adopted 2026-09-22).
+   */
+  origin?: 'capture';
 }
 
 export interface InfoItem {

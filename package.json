@@ -1,15 +1,23 @@
 {
   "name": "duel-beef-audit",
-  "version": "1.0.0",
-  "description": "Provably fair audit \u2014 Duel.com Beef (cross-road)",
+  "version": "1.1.0",
+  "description": "Provably fair audit — Duel.com Beef (cross-road)",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "test": "mocha && npm run verify",
+    "test:full": "mocha && npm run simulate && npm run verify",
     "verify": "ts-node tests/verify.ts",
-    "simulate": "ts-node src/simulate.ts"
+    "simulate": "ts-node src/simulate.ts",
+    "mutate": "node scripts/mutate.mjs",
+    "release-manifest": "node scripts/release-manifest.mjs",
+    "rtp-claim:write": "ts-node src/rtp-settings.ts"
   },
   "devDependencies": {
     "@types/mocha": "^10",
     "@types/node": "^22",
+    "chart.js": "4.4.7",
     "mocha": "^11",
     "ts-node": "^10",
     "typescript": "^5"

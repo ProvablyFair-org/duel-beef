@@ -5,5 +5,13 @@ outputs/*.json
 !outputs/rtp-convergence.html
 .DS_Store
 
-# run products — this verifier writes them fresh each run; the committed artifacts are pinned
+# artifacts of record — the verifier scores a run against these; all but
+# verification-results.json are pinned by SHA-256 in src/artifact-pins.ts (Step 23)
+!outputs/verification-results.json
+!outputs/determinism-log.json
+!outputs/chi-squared-results.json
+!outputs/simulation-results.json
+
+# run products — verify and simulate write them fresh each run; the committed artifacts are pinned
 outputs/run/
+!outputs/rtp-claim-table.json

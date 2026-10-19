@@ -4,7 +4,7 @@
  * chiSquaredTest       — goodness-of-fit with exact p-values via regularized incomplete gamma.
  * chiSquaredPValue     — standalone p-value computation.
  * lag1Autocorrelation  — lag-1 autocorrelation of a numeric series.
- * runsTest             — Wald-Wolfowitz runs test for serial randomness.
+ * runsTest             — Wald-Wolfowitz runs test on a win/loss (0/1) series.
  * inverseCriticalZ     — two-tailed critical z for Bonferroni thresholds.
  */
 
@@ -155,54 +155,35 @@ export interface RunsTestResult {
   pValue: number;
 }
 
+/**
+ * Wald–Wolfowitz runs test on a WIN/LOSS series (1 = win, 0 = loss): n1 = wins, n2 = losses,
+ * R = number of runs (maximal blocks of equal outcomes),
+ *   E[R] = 2·n1·n2/n + 1,   Var[R] = 2·n1·n2·(2·n1·n2 − n) / (n²·(n − 1)),
+ *   z = (R − E[R]) / √Var[R],   two-sided p.
+ *
+ * Until 2026-10-06 this dichotomised the series at its MEDIAN with `>=`. On a 0/1 series whose
+ * losses outnumber its wins the median is 0, every round is "above" it, n2 = 0, Var[R] = 0, and the
+ * test returned z = 0, p = 1 whatever the sequence (Pass 1 difficulty 4, 10 death points, win rate
+ * 0.499415). With wins in the majority the median split was already the win/loss split, so
+ * difficulties 1–3 are unchanged. Same correction as Duel Mines src/sim-census.ts runsFromCensus.
+ */
 export function runsTest(series: number[]): RunsTestResult {
-  const med = quickMedian(series);
-  // Single pass: compute n1, n2, and runs without allocating a bitmask array
+  const n = series.length;
+  if (n === 0) throw new Error('runsTest: empty series');
   let n1 = 0;
   let runs = 1;
-  let prevAbove = series[0] >= med;
-  if (prevAbove) n1++;
-  for (let i = 1; i < series.length; i++) {
-    const above = series[i] >= med;
-    if (above) n1++;
-    if (above !== prevAbove) { runs++; prevAbove = above; }
+  for (let i = 0; i < n; i++) {
+    const x = series[i];
+    if (x !== 0 && x !== 1) throw new Error(`runsTest: series[${i}] = ${x} is not a 0/1 outcome`);
+    if (x === 1) n1++;
+    if (i > 0 && x !== series[i - 1]) runs++;
   }
-  const n = series.length;
   const n2 = n - n1;
   const expected  = (2 * n1 * n2) / n + 1;
   const varRuns   = (2 * n1 * n2 * (2 * n1 * n2 - n)) / (n * n * (n - 1));
   const z         = varRuns > 0 ? (runs - expected) / Math.sqrt(varRuns) : 0;
   const pValue    = 2 * (1 - normalCDF(Math.abs(z)));
   return { runs, expected, z, pValue };
-}
-
-/** O(n) median via counting sort — optimal for small-integer series (revealed tile counts 0–24). */
-function quickMedian(arr: number[]): number {
-  let min = arr[0], max = arr[0];
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] < min) min = arr[i];
-    if (arr[i] > max) max = arr[i];
-  }
-  const counts = new Array(max - min + 1).fill(0);
-  for (let i = 0; i < arr.length; i++) counts[arr[i] - min]++;
-  const mid = Math.floor(arr.length / 2);
-  let cum = 0;
-  for (let v = 0; v < counts.length; v++) {
-    cum += counts[v];
-    if (arr.length % 2 === 1) {
-      if (cum > mid) return v + min;
-    } else {
-      if (cum === mid) {
-        // mid-th value is v+min, find next non-zero for averaging
-        for (let w = v + 1; w < counts.length; w++) {
-          if (counts[w] > 0) return ((v + min) + (w + min)) / 2;
-        }
-        return v + min;
-      }
-      if (cum > mid) return v + min;
-    }
-  }
-  return arr[0]; // fallback
 }
 
 // ── Inverse critical z ────────────────────────────────────────────────────────
@@ -228,4 +209,23 @@ function erf(x: number): number {
   const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t
     - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
   return Math.sign(x) * y;
+}
+
+/**
+ * P(X >= k) for X ~ Binomial(n, p). Same arithmetic as the local copy in src/simulate.ts (which
+ * produced the committed test_a/test_b binomial p-values), exported so the verifier can
+ * recompute those figures instead of reading them.
+ */
+export function binomSurvival(k: number, n: number, p: number): number {
+  if (k <= 0) return 1;
+  if (k > n) return 0;
+  let cdf = 0;
+  for (let i = 0; i < k; i++) cdf += binomPMF(i, n, p);
+  return Math.max(0, 1 - cdf);
+}
+function binomPMF(k: number, n: number, p: number): number {
+  let logP = 0;
+  for (let i = 0; i < k; i++) logP += Math.log(n - i) - Math.log(i + 1);
+  logP += k * Math.log(p) + (n - k) * Math.log(1 - p);
+  return Math.exp(logP);
 }

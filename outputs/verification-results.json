@@ -1,5 +1,4 @@
 {
-  "generatedAt": "2026-09-14T19:50:12.429Z",
   "totalBets": 6450,
   "totalSeeds": 139,
   "steps": [
@@ -7,141 +6,1206 @@
       "step": 1,
       "name": "Seed Hash Integrity",
       "status": "PASS",
-      "detail": "121 revealed seeds verified. 3 phase-boundary skips."
+      "detail": "121 of the 124 rotation transitions required by src/loader.ts verified by SHA-256; 3 phase-boundary transitions excluded (the opening rotations of Phases B, C and D reveal the previous phase's last bet-bearing seed again, not the end-of-phase seed, which had no bets); 0 seed rows without plaintext",
+      "data": {
+        "seedRecords": 125,
+        "revealed": 125,
+        "compared": 121,
+        "phaseBoundarySkips": 3,
+        "unrevealed": 0,
+        "hashMismatches": 0,
+        "populationIssues": [],
+        "failures": []
+      },
+      "profileIds": [
+        "BEEF-01"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-01",
+          "coverage": "full",
+          "note": "SHA-256(hex_decode(serverSeed)) against the previous record's serverSeedHashed on every rotation transition; the count is bound to src/loader.ts (EXPECTED_SEEDS 125, EXPECTED_REVEALED_SEEDS 125, EXPECTED_SEED_TRANSITIONS 124 = 121 compared + 3 phase-boundary transitions), an unrevealed seed row FAILs. Every bet-bearing seed of BOTH files is additionally hash-verified before use (src/loader.ts buildSeedMap) and Steps 5/21 FAIL on any bet whose seed is not in that map, so zero bets are unverifiable"
+        }
+      ]
     },
     {
       "step": 2,
-      "name": "Next-Seed Promotion (Commitment Linkage)",
+      "name": "Next-Seed Promotion + Forward Commitment Chain",
       "status": "PASS",
-      "detail": "125/125 rotation transitions independently verified — previousNextHash === newActiveHash across the chain"
+      "detail": "125/125 rotations recomputed from raw hex (previousNextHash === newActiveHash), 124/124 forward links verified (seeds[i].nextServerSeedHash === seeds[i+1].serverSeedHashed), pre-capture link present — consistency checks: in this capture a promotion and the forward link before it are one comparison, and that each \"next\" hash was shown before the rotation that activated it rests on the capture's write order, not on the hashes; Phase E file: 14/14 promotions, 13/13 forward links, pre-capture link present",
+      "data": {
+        "promotionsChecked": 125,
+        "promotionsOk": 125,
+        "forwardLinksChecked": 124,
+        "forwardLinksOk": 124,
+        "preCaptureLink": true,
+        "phaseE": {
+          "promotionsChecked": 14,
+          "promotionsOk": 14,
+          "forwardLinksChecked": 13,
+          "forwardLinksOk": 13,
+          "preCaptureLink": true
+        },
+        "populationIssues": [],
+        "failures": []
+      },
+      "profileIds": [
+        "BEEF-02"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-02",
+          "coverage": "full",
+          "note": "recomputed from raw hex, never from the capture script's `match` boolean: promotion previousNextHash === newActiveHash on all 125 primary rotations, forward links seeds[i].nextServerSeedHash === seeds[i+1].serverSeedHashed 124/124, and a pre-capture link (an absent link FAILs); since 2026-09-26 the same three on the Phase E file (14/14 promotions, 13/13 links, its own pre-capture link), bound to EXPECTED_PHASE_E_SEEDS"
+        }
+      ]
     },
     {
       "step": 3,
       "name": "Hash Consistency Within Epoch",
       "status": "PASS",
-      "detail": "All 121 epochs: serverSeedHashed identical across all bets within each epoch"
+      "detail": "Epochs taken from the rotation timeline, not from the bets: 6000 bets fall in 121 bet-bearing windows (4 rotation records with no bets: indices 81, 102, 107, 124; 0 orphans), and every bet carries the serverSeedHashed and clientSeed of the rotation active at its timestamp; Phase E file: 450 bets in 10 bet-bearing windows (4 rotation records with no bets), same result",
+      "data": {
+        "betBearingWindows": 121,
+        "emptyWindows": [
+          81,
+          102,
+          107,
+          124
+        ],
+        "orphans": 0,
+        "wrongHash": 0,
+        "wrongClient": 0,
+        "outOfOrder": 0,
+        "phaseE": {
+          "betBearingWindows": 10,
+          "emptyWindows": [
+            2,
+            5,
+            9,
+            13
+          ],
+          "orphans": 0,
+          "wrongHash": 0,
+          "wrongClient": 0,
+          "outOfOrder": 0
+        }
+      },
+      "profileIds": [
+        "BEEF-03"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-03",
+          "coverage": "full",
+          "note": "epochs from the rotation TIMELINE, not from the bets: every bet carries the serverSeedHashed and clientSeed of the rotation active at its timestamp (orphans, out-of-order bets and a window/hash-count disagreement all FAIL) — the 6,000 primary bets in 121 windows and, since 2026-09-26, the 450 Phase E bets in 10 windows, each count bound to src/loader.ts (EXPECTED_EPOCHS, EXPECTED_PHASE_E_EPOCHS). FAIL probed (a Phase E bet given a foreign client seed)"
+        }
+      ]
     },
     {
       "step": 4,
       "name": "Nonce Audit",
-      "status": "PASS",
-      "detail": "121 epochs; 1 with capture-retry gaps (1 missed nonces total); 1 reconstructed from revealed seed (no captured server response available for comparison), 0 unverifiable."
+      "status": "FLAG",
+      "detail": "121 primary + 10 Phase E epochs: nonces from 0, no duplicates, all within 0..49, one client seed per epoch; 2 nonce gap(s), matching the 2 capture-retry gap(s) declared by identity in src/loader.ts (b2dfe98473b69f19…#25, Phase E 1dfe6dcfa0e64dc5…#31). Each revealed server seed hashes to the commitment its epoch's bets were served under, so the missed rounds' death points are reconstructed in this step's data block — but the rounds themselves were not captured and are NOT verified. Capture-origin FLAG: disclosed, verdict-neutral.",
+      "data": {
+        "epochs": 121,
+        "phaseEEpochs": 10,
+        "observedGaps": 2,
+        "declaredGaps": 2,
+        "expectedGaps": 2,
+        "reconstructed": [
+          {
+            "file": "primary",
+            "epoch": "b2dfe98473b69f19f8ff0a79bb2661403ab9492b0c12bd4e1956a54bc3727a46",
+            "nonce": 25,
+            "deathPointsByDifficulty": {
+              "1": [
+                13
+              ],
+              "2": [
+                13,
+                16,
+                19
+              ],
+              "3": [
+                1,
+                3,
+                13,
+                16,
+                19
+              ],
+              "4": [
+                1,
+                3,
+                5,
+                6,
+                7,
+                9,
+                10,
+                13,
+                16,
+                19
+              ]
+            }
+          },
+          {
+            "file": "Phase E",
+            "epoch": "1dfe6dcfa0e64dc57642c1c4cb0dfc24d79d15f2d1f71fc0748c09fedd741107",
+            "nonce": 31,
+            "deathPointsByDifficulty": {
+              "1": [
+                11
+              ],
+              "2": [
+                5,
+                11,
+                13
+              ],
+              "3": [
+                0,
+                5,
+                11,
+                13,
+                15
+              ],
+              "4": [
+                0,
+                3,
+                5,
+                11,
+                13,
+                14,
+                15,
+                16,
+                17,
+                18
+              ]
+            }
+          }
+        ],
+        "failures": []
+      },
+      "origin": "capture",
+      "profileIds": [
+        "BEEF-04",
+        "BEEF-03"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-04",
+          "coverage": "full",
+          "note": "both files (Phase E added 2026-09-26): every epoch starts at the declared base 0, no duplicate, nothing outside 0..49, one client seed; a gap is a HARD FAIL unless it is declared BY IDENTITY — primary b2dfe984…#25 (EXPECTED_NONCE_GAPS) and Phase E 1dfe6dcf…#31 (EXPECTED_PHASE_E_NONCE_GAPS, E4, followed by a 1-bet epoch: the retry shape of the primary gap); a declared gap that is absent, or under an unrevealed / non-matching seed, FAILs. The two declared gaps are a capture-origin FLAG (decision-13: verdict-neutral, never an operator finding) with their death points reconstructed, not verified. FAIL probed (the Phase E gap declared at nonce 30)"
+        },
+        {
+          "id": "BEEF-03",
+          "coverage": "full",
+          "note": "client-seed half — exactly one client seed per epoch in both files"
+        }
+      ]
     },
     {
       "step": 5,
       "name": "Outcome Recomputation (Death Points)",
       "status": "PASS",
-      "detail": "6000/6000 verified, 0 mismatches, 0 skipped (unrevealed seeds)"
+      "detail": "6000/6000 verified, 0 mismatches, 0 skipped (unrevealed seeds). Draw bias bound (BEEF-08), measured from src/rng.ts drawFromChunk on all 19 ranges 2..20: every accepted window is an exact whole number of ranges (range 20: 4294967280 = 20 × 214748364), so every swap index is exactly equiprobable — worst bias 0, inside the 2^-32 ceiling (uncorrected v mod range would lean by up to 4.66e-9 relative, 2.19e-10 absolute). Rejection census over the 6,000 rounds: 114,000 draws, 114,000 chunks read, 0 rejected, 0 cursor advances (expected rejections 1.38e-4). Player-verifier parity (BEEF-24): the ProvablyFair.org docs-site derive.js (pinned, origin/main @ bd4d59c) executed on 6450/6450 rounds of both datasets — 0 death-point disagreements with src/rng.ts; its paid multiplier on 4539 wins within relative 1e-12 of the exact rational and the served figure. Operator-code parity (BEEF-09): Duel's own Beef Verify-tab code (evidence/verify-tab/duel-verify-tab-beef-2026-09-26.js, pasted by Paulo from duel.com Verify tab 2026-09-26 (duel.com → Provably Fair → Verify, game Beef, code panel), SHA-256 43ba4dfbd068cbf5…, pinned) executed with only its five \"User input values\" filled in (gridSize 20, deathPointsCount from the served difficulty) on 6450/6450 rounds of both datasets — its death points equal the served ones and src/rng.ts on every round (0 / 0 differ), the line it prints equals what its code prints for the returned list on 6450/6450, operator lines cited by src/rng.ts 17/17 verbatim",
+      "data": {
+        "population": 6000,
+        "verified": 6000,
+        "mismatches": 0,
+        "skipped": 0,
+        "drawBias": {
+          "ceiling": 2.3283064365386963e-10,
+          "worstBias": 0,
+          "worstUncorrectedBias": 2.1913472343893612e-10,
+          "worstUncorrectedRelativeBias": 4.6566128730773926e-9,
+          "inexactRanges": [],
+          "predicateProbeFailures": 0,
+          "ranges": [
+            {
+              "range": 2,
+              "acceptedWindow": 4294967294,
+              "perIndex": 2147483647,
+              "remainder": 0,
+              "rejectedValues": 2
+            },
+            {
+              "range": 3,
+              "acceptedWindow": 4294967295,
+              "perIndex": 1431655765,
+              "remainder": 0,
+              "rejectedValues": 1
+            },
+            {
+              "range": 4,
+              "acceptedWindow": 4294967292,
+              "perIndex": 1073741823,
+              "remainder": 0,
+              "rejectedValues": 4
+            },
+            {
+              "range": 5,
+              "acceptedWindow": 4294967295,
+              "perIndex": 858993459,
+              "remainder": 0,
+              "rejectedValues": 1
+            },
+            {
+              "range": 6,
+              "acceptedWindow": 4294967292,
+              "perIndex": 715827882,
+              "remainder": 0,
+              "rejectedValues": 4
+            },
+            {
+              "range": 7,
+              "acceptedWindow": 4294967292,
+              "perIndex": 613566756,
+              "remainder": 0,
+              "rejectedValues": 4
+            },
+            {
+              "range": 8,
+              "acceptedWindow": 4294967288,
+              "perIndex": 536870911,
+              "remainder": 0,
+              "rejectedValues": 8
+            },
+            {
+              "range": 9,
+              "acceptedWindow": 4294967292,
+              "perIndex": 477218588,
+              "remainder": 0,
+              "rejectedValues": 4
+            },
+            {
+              "range": 10,
+              "acceptedWindow": 4294967290,
+              "perIndex": 429496729,
+              "remainder": 0,
+              "rejectedValues": 6
+            },
+            {
+              "range": 11,
+              "acceptedWindow": 4294967292,
+              "perIndex": 390451572,
+              "remainder": 0,
+              "rejectedValues": 4
+            },
+            {
+              "range": 12,
+              "acceptedWindow": 4294967292,
+              "perIndex": 357913941,
+              "remainder": 0,
+              "rejectedValues": 4
+            },
+            {
+              "range": 13,
+              "acceptedWindow": 4294967287,
+              "perIndex": 330382099,
+              "remainder": 0,
+              "rejectedValues": 9
+            },
+            {
+              "range": 14,
+              "acceptedWindow": 4294967292,
+              "perIndex": 306783378,
+              "remainder": 0,
+              "rejectedValues": 4
+            },
+            {
+              "range": 15,
+              "acceptedWindow": 4294967295,
+              "perIndex": 286331153,
+              "remainder": 0,
+              "rejectedValues": 1
+            },
+            {
+              "range": 16,
+              "acceptedWindow": 4294967280,
+              "perIndex": 268435455,
+              "remainder": 0,
+              "rejectedValues": 16
+            },
+            {
+              "range": 17,
+              "acceptedWindow": 4294967295,
+              "perIndex": 252645135,
+              "remainder": 0,
+              "rejectedValues": 1
+            },
+            {
+              "range": 18,
+              "acceptedWindow": 4294967292,
+              "perIndex": 238609294,
+              "remainder": 0,
+              "rejectedValues": 4
+            },
+            {
+              "range": 19,
+              "acceptedWindow": 4294967290,
+              "perIndex": 226050910,
+              "remainder": 0,
+              "rejectedValues": 6
+            },
+            {
+              "range": 20,
+              "acceptedWindow": 4294967280,
+              "perIndex": 214748364,
+              "remainder": 0,
+              "rejectedValues": 16
+            }
+          ],
+          "census": {
+            "draws": 114000,
+            "chunksRead": 114000,
+            "rejectedChunks": 0,
+            "cursorAdvances": 0,
+            "expectedDraws": 114000,
+            "expectedRejectedChunks": 0.00013830140261174902
+          }
+        },
+        "siteVerifier": {
+          "provenance": {
+            "siteRoot": "qa-workspace/duel/docusaurus/src/components/VerifyBets",
+            "repository": "mikepforg/pf-audit-duel",
+            "ref": "origin/main",
+            "head": "bd4d59cd9a3e75146f2575c5218a3fb9a8b2692d",
+            "headDate": "2026-09-19",
+            "deriveLastChanged": "4aaa1b267a6b86199c46f57db41058c7885067bb (2026-06-07)",
+            "readVia": "git cat-file -p origin/main:<path>",
+            "readOn": "2026-09-26"
+          },
+          "files": [
+            {
+              "file": "games/beef/derive.js",
+              "pinned": "0003d6347506334f27b2159d73d6552cd19c39d52348dd97e6270b6293e592d3",
+              "actual": "0003d6347506334f27b2159d73d6552cd19c39d52348dd97e6270b6293e592d3",
+              "match": true
+            },
+            {
+              "file": "lib/hmac-sha256.js",
+              "pinned": "bc30bfe9ef202905ece93de33440d41851abf16e910f90c2a567774a2b79d889",
+              "actual": "bc30bfe9ef202905ece93de33440d41851abf16e910f90c2a567774a2b79d889",
+              "match": true
+            }
+          ],
+          "compared": 6450,
+          "expected": 6450,
+          "mismatches": 0,
+          "unrecomputable": 0,
+          "multipliersChecked": 4539,
+          "multiplierMismatches": 0,
+          "worstMultiplierDeviation": 1.06112054329371e-16
+        },
+        "operatorVerifier": {
+          "files": [
+            {
+              "file": "evidence/verify-tab/duel-verify-tab-beef-2026-09-26.js",
+              "pinnedSha256": "43ba4dfbd068cbf5dde917a5432ef664df2ef68f4fabc91f516ed220ed5564f6",
+              "actualSha256": "43ba4dfbd068cbf5dde917a5432ef664df2ef68f4fabc91f516ed220ed5564f6",
+              "match": true
+            },
+            {
+              "file": "verifier-parity/operator/run-operator-verifier.cjs",
+              "pinnedSha256": "729473f5a8c7c4d54e59a2cfa67365e64af024aa7ddf634fcfe97d3beccffcee",
+              "actualSha256": "729473f5a8c7c4d54e59a2cfa67365e64af024aa7ddf634fcfe97d3beccffcee",
+              "match": true
+            }
+          ],
+          "provenance": {
+            "copiedBy": "Paulo",
+            "copiedOn": "2026-09-26",
+            "from": "pasted by Paulo from duel.com Verify tab 2026-09-26 (duel.com → Provably Fair → Verify, game Beef, code panel)",
+            "savedAs": "evidence/verify-tab/duel-verify-tab-beef-2026-09-26.js",
+            "sha256": "43ba4dfbd068cbf5dde917a5432ef664df2ef68f4fabc91f516ed220ed5564f6",
+            "bytes": 3353,
+            "lines": 101
+          },
+          "roundsExecuted": 6450,
+          "expected": 6450,
+          "differsFromServed": 0,
+          "differsFromRng": 0,
+          "printedEqualsReturned": 6450,
+          "errors": 0,
+          "citesChecked": 17,
+          "citesBad": 0,
+          "issues": []
+        }
+      },
+      "profileIds": [
+        "BEEF-07",
+        "BEEF-08",
+        "BEEF-24"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-07",
+          "coverage": "full",
+          "note": "primary half: all 6,000 bets recomputed to the served mines_positions (compared as a sorted set — the capture records death points sorted), bound to EXPECTED_BETS; an unrevealed seed is a FAIL of this step. Phase E half: Step 21 (450/450)"
+        },
+        {
+          "id": "BEEF-08",
+          "coverage": "full",
+          "note": "added 2026-09-26 (ported from Duel Mines Step 5): the bound is MEASURED from src/rng.ts drawFromChunk — the function the shuffle calls — on all 19 ranges 2..20 (binary search for the accepted window + ~600 predicate probes per range); FAIL unless every window is an exact whole number of ranges and the worst per-index bias is inside 2^-32. Measured: exact on all 19 (range 20: 4,294,967,280 = 20 × 214,748,364), worst bias 0. The rejection census over the 6,000 recomputed rounds (114,000 draws) is printed with its expectation. FAIL probed (maxFairFor changed to accept every value below 2^32 − 1)"
+        },
+        {
+          "id": "BEEF-24",
+          "coverage": "full",
+          "note": "added 2026-09-26 (ported from Duel Dice / Mines): the ProvablyFair.org docs-site VerifyBets games/beef/derive.js + lib/hmac-sha256.js, read with `git cat-file -p origin/main:<path>` from mikepforg/pf-audit-duel origin/main @ bd4d59c (derive.js last changed 4aaa1b2, 2026-06-07), vendored under verifier-parity/ and pinned in src/site-verifier.ts (derive.js 0003d634…, hmac-sha256.js bc30bfe9…). Step 5 FAILs unless the copies hash to the pins, then EXECUTES the site's deriveBeef on every round of both datasets (bound to 6,000 + 450) and requires its death points to equal src/rng.ts, its DIFFICULTIES table to map each served difficulty_level to the same death-point count, and on every win its cashoutMultiplier(m, k) to lie within relative 1e-12 of the exact paid multiplier (as the served one must). FAIL probed (derive.js logic changed and re-pinned; a byte changed without re-pin). The LIVE page www.provablyfair.org/verify-bets is a separate build and is not checked"
+        }
+      ]
     },
     {
       "step": 6,
       "name": "Client Seed Influence",
       "status": "PASS",
-      "detail": "597/601 bets: wrong clientSeed → different death points"
+      "detail": "6000/6000 bets: wrong clientSeed → different 20-tile permutation (the full RNG output, not the death-point projection); 59 bet(s) keep the same death-point SET by chance (61.3 expected at 1/C(20,m) per bet); empty-seed control (clientSeed \"\"): 6000/6000 permutations differ",
+      "data": {
+        "population": 6000,
+        "tested": 6000,
+        "changed": 6000,
+        "emptySeedChanged": 6000,
+        "skipped": 0,
+        "projectionUnchanged": 59,
+        "projectionExpected": 61.31737715329147,
+        "projectionUnchangedByDifficulty": {
+          "1": 58,
+          "2": 1
+        }
+      },
+      "profileIds": [
+        "BEEF-06"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-06",
+          "coverage": "partial",
+          "note": "client-seed-influence half: a wrong client seed must change the FULL 20-tile permutation on every one of the 6,000 bets (the model rate of a chance repeat is 1/20!, so \"every bet\" is the model-rate bar with no allowance), and — added 2026-09-26 — an EMPTY-SEED CONTROL (clientSeed \"\") on all 6,000 with the same bar. Phase D recomputation is Step 17. PARTIAL: (1) the profile requires the A–C client-seed generator to be a CSPRNG; the capture scripts use Math.random() (capture/beef-capture.reference.js:170-172, beef-capture-phaseE.reference.js:268-270) — RULE-NEWER-THAN-CAPTURE (capture April 2026, profile standard 23 Sep 2026), disclosed MANIFEST DL-2; (2) the Phase D seeds are 'pfaudit' + Date.now().toString(36) (capture/beef-capture.reference.js:339, :362) — predictable; disclosed MANIFEST DL-3, but no step enumerates the exposed epochs against a constant"
+        }
+      ]
     },
     {
       "step": 7,
       "name": "Payout Math",
       "status": "PASS",
-      "detail": "6000 bets checked, 0 errors (tolerance 1e-8)"
+      "detail": "6000 bets checked, 0 errors (relative tolerance 1e-12)",
+      "profileIds": [
+        "BEEF-11"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-11",
+          "coverage": "full",
+          "note": "primary half: every one of the 6,000 bets — each win credits amount × the served paid multiplier (no_house_edge_multiplier) within MONEY_REL_TOL = 1e-12 relative floored at 1 (largest credit in either file 11.6706 → tolerance 1.2e-11, inside the profile's 1e-8; the declaration names no settlement rule, so the tolerance arm applies), each loss credits exactly \"0\". The paid multiplier itself is bound to the exact formula by Step 8. Phase E: Step 22 (cash-outs and, since 2026-09-26, every Phase E loss = \"0\")"
+        }
+      ]
     },
     {
       "step": 8,
       "name": "Multiplier Formula (C(20,k)/C(20−m,k) × edge)",
       "status": "PASS",
-      "detail": "4337 winning bets: multiplier = C(20,k)/C(20−m,k), payout_mult = raw × 0.992 (0.8% edge); 0 mismatches"
+      "detail": "4337 winning bets: multiplier = C(20,k)/C(20−m,k), payout_mult = raw × 992/1000 (0.8% edge), both compared EXACTLY with the rational at relative 1e-12 (worst deviation in this step's data block); 0 mismatches",
+      "data": {
+        "wins": 4337,
+        "mismatches": 0,
+        "relTol": 1e-12,
+        "worstRelativeDeviation": 5.04032258064e-19
+      },
+      "profileIds": [
+        "BEEF-13"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-13",
+          "coverage": "full",
+          "note": "k = 1 arm (all primary wins, 4,337): both served strings parsed EXACTLY and compared with the exact rational (src/exact.ts) — multiplier with C(20,k)/C(20−m,k), no_house_edge_multiplier with the same × 992/1000 — at MULT_REL_TOL = 1e-12 relative, which replaced 1e-6 ABSOLUTE on 2026-09-26. No exact equality is available: the operator's k > 1 values carry double error (worst measured 9.63e-15, Steps 20/22), so 1e-12 leaves ~100× headroom; the worst deviation is emitted every run. The derivation reads (m, k) only; the formula's origin is Duel's /cross-road/config payout table (src/rng.ts:30, :290-298). FAIL probed (one served multiplier moved 1e-9 relative — the old 1e-6 bound passed it). Rungs k > 1: Step 20; Phase C: Step 10"
+        }
+      ]
     },
     {
       "step": 9,
       "name": "Win Condition (all stepped tiles not in mines)",
       "status": "PASS",
-      "detail": "6000 bets verified: outcome=win iff every current_step[] ∉ mines_positions; 0 errors"
+      "detail": "6450/6450 rounds (both datasets) verified against the RECOMPUTED death points: stepped tiles are the path prefix 0…k−1, outcome=win iff no stepped tile is a death point, and every loss ends on its first death point; 0 errors",
+      "data": {
+        "checked": 6450,
+        "expected": 6450,
+        "errors": 0,
+        "unrecomputable": 0
+      },
+      "profileIds": [
+        "BEEF-10"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-10",
+          "coverage": "full",
+          "note": "hardened 2026-09-26: on all 6,450 rounds of both files, death points from the RECOMPUTATION (not the served set); stepped tiles must be exactly the path prefix 0…k−1 (and k = reached_k where recorded); win ⇔ no stepped tile is a death point; a loss must end on its first death point. Was: served outcome vs served current_step ∩ mines_positions on the 6,000 primary bets only. FAIL probed (a loss's path re-ordered)"
+        }
+      ]
     },
     {
       "step": 10,
       "name": "Phase C Bet-Size Invariance ($10 bets)",
       "status": "PASS",
-      "detail": "200 Phase C bets ($10), 165 wins: multiplier formula identical, payout math correct; 0 errors"
+      "detail": "200 Phase C bets ($10), 165 wins: multiplier formula identical, payout math correct; 0 errors",
+      "profileIds": [
+        "BEEF-12"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-12",
+          "coverage": "full",
+          "note": "Phase C = 200 bets at $10 (1,000× the 0.01 base), bound to EXPECTED_PHASE_BETS.C, every bet asserted at $10, zero wins is a FAIL; 165 wins at difficulty 2 (MEDIUM) — ≥ 100 elevated-stake wins on the payout path. Each win's two multipliers against the exact rational (1e-12 relative) and its credit at MONEY_REL_TOL; every Phase C bet recomputes in Step 5. Note for C-08: Phase B is difficulty 4 (EXPERT), so Phase C does not run the Phase B board — the stake-only comparison is Phase C vs the Phase A difficulty-2 bets, same formula"
+        }
+      ]
     },
     {
       "step": 11,
-      "name": "Config Completeness (4 difficulty levels)",
+      "name": "Config Completeness & Payout-Table Coverage",
       "status": "PASS",
-      "detail": "4/4 difficulty levels present"
+      "detail": "All 4 difficulty levels carry at least the 1000-bet floor declared in src/loader.ts. Payout-table coverage: 15 of 61 (difficulty, k) cells observed in live play, including all 15 cells the capture plan in src/loader.ts requires; the 46 unexercised cells are named in this step's data block and carry the same theoretical RTP, proven analytically for every cell in Step 16.",
+      "data": {
+        "betsPerDifficulty": {
+          "1": 1200,
+          "2": 1400,
+          "3": 1200,
+          "4": 2200
+        },
+        "minBetsPerDifficulty": 1000,
+        "totalCells": 61,
+        "exercisedCells": 15,
+        "plannedCells": 15,
+        "plannedMissing": [],
+        "coverageShare": 0.2459016393442623,
+        "neverExercisedCells": [
+          "d1:k6",
+          "d1:k7",
+          "d1:k8",
+          "d1:k9",
+          "d1:k10",
+          "d1:k11",
+          "d1:k12",
+          "d1:k13",
+          "d1:k14",
+          "d1:k15",
+          "d1:k16",
+          "d1:k17",
+          "d1:k18",
+          "d1:k19",
+          "d2:k4",
+          "d2:k5",
+          "d2:k6",
+          "d2:k7",
+          "d2:k8",
+          "d2:k9",
+          "d2:k10",
+          "d2:k11",
+          "d2:k12",
+          "d2:k13",
+          "d2:k14",
+          "d2:k15",
+          "d2:k16",
+          "d2:k17",
+          "d3:k6",
+          "d3:k7",
+          "d3:k8",
+          "d3:k9",
+          "d3:k10",
+          "d3:k11",
+          "d3:k12",
+          "d3:k13",
+          "d3:k14",
+          "d3:k15",
+          "d4:k3",
+          "d4:k4",
+          "d4:k5",
+          "d4:k6",
+          "d4:k7",
+          "d4:k8",
+          "d4:k9",
+          "d4:k10"
+        ],
+        "theoreticalRTPPerCell": 0.992,
+        "unverifiedRTPShare": 0,
+        "note": "Every (difficulty, k) cell has theoretical RTP 1 − edge by the identity proven in Step 16, so an unexercised cell carries no unverified RTP mass — only no live observation of its multiplier.",
+        "failures": []
+      },
+      "profileIds": [
+        "BEEF-15"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-15",
+          "coverage": "full",
+          "note": "every difficulty ≥ MIN_BETS_PER_DIFFICULTY = 1,000 (src/loader.ts); (difficulty, k) cells observed in live play counted against all 61, the 46 never-observed named in the data block with the RTP they carry (0.992 each, Step 16 — no unverified RTP mass); the 15 cells the capture plan requires (k = 1 at every difficulty + k = 1..target_k for E1–E4) must all be observed, else FAIL"
+        }
+      ]
     },
     {
       "step": 12,
       "name": "House Edge Audit (effective_edge = 0.8%)",
       "status": "PASS",
-      "detail": "6000 bets: effective_edge = 0.8 (0.8%) for all; 0 deviations"
+      "detail": "6000 bets: effective_edge = 0.8 (0.8%) for all; 0 deviations",
+      "profileIds": [
+        "BEEF-19"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-19",
+          "coverage": "full",
+          "note": "operator half: the served effective_edge field = 0.8 on all 6,000 primary bets (compared, never used as the derivation); the derived half is Step 16"
+        }
+      ]
     },
     {
       "step": 13,
       "name": "Population & Phase Labels",
       "status": "PASS",
-      "detail": "6000/6000 bets and 125/125 seed records against the capture plan in src/loader.ts (code constants, not the dataset header); per phase A=4000/4000 B=1000/1000 C=200/200 D=800/800; last bet phase: D"
+      "detail": "6000 bets and 125 seed records match the capture plan in src/loader.ts (code constants, not the dataset header); phases A, B, C, D all present, last bet phase D",
+      "data": {
+        "betPhases": {
+          "A": 4000,
+          "B": 1000,
+          "C": 200,
+          "D": 800
+        },
+        "seedPhases": {
+          "A": 82,
+          "B": 21,
+          "C": 5,
+          "D": 17
+        },
+        "lastPhase": "D",
+        "populationIssues": []
+      },
+      "profileIds": [
+        "BEEF-05"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-05",
+          "coverage": "full",
+          "note": "bets 6,000, seed records 125, per-phase bets A 4,000 / B 1,000 / C 200 / D 800 and per-phase seeds against src/loader.ts constants, not the dataset header; epoch sizes are Step 15; the secondary Phase E file is counted against EXPECTED_PHASE_E_BETS / _BY_PHASE (Steps 20–22) and EXPECTED_PHASE_E_SEEDS (Step 2)"
+        }
+      ]
     },
     {
       "step": 14,
       "name": "Dataset Hash",
       "status": "PASS",
-      "detail": "Expected: d654ef7c6195584501e9033202d5acad13a16d89d296baab8befc0240fb36d36 | Actual: d654ef7c6195584501e9033202d5acad13a16d89d296baab8befc0240fb36d36"
+      "detail": "Primary: d654ef7c6195584501e9033202d5acad13a16d89d296baab8befc0240fb36d36 matches its pin | Phase E: ef39d7f584cdb6d8057e846cdcb9b4ffcc60495bfcce8443d15bb910a9c51001 matches its pin",
+      "profileIds": [
+        "BEEF-26"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-26",
+          "coverage": "full",
+          "note": "SHA-256 of BOTH dataset files against the pins in src/loader.ts:8-9; a mismatch or an absent Phase E file is a HARD FAIL scored here (the pre-flight prints and continues so this FAIL branch is reachable; PF_EMIT=1 refuses to run on a mismatch)"
+        }
+      ]
     },
     {
       "step": 15,
       "name": "Epoch Size",
       "status": "PASS",
-      "detail": "121 epochs; min=1, max=50 bets per epoch"
+      "detail": "121 epochs as declared in src/loader.ts: 119 of exactly 50 bets, plus the two documented capture-retry epochs of 1 and 49 bets",
+      "data": {
+        "epochs": 121,
+        "fullEpochs": 119,
+        "shortEpochSizes": [
+          1,
+          49
+        ],
+        "minSize": 1,
+        "maxSize": 50,
+        "epochIssues": []
+      },
+      "profileIds": [
+        "BEEF-05"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-05",
+          "coverage": "full",
+          "note": "epoch half: exactly EXPECTED_EPOCHS = 121 epochs, every one of 50 bets except the declared multiset [1, 49] (the capture-retry split)"
+        }
+      ]
     },
     {
       "step": 16,
       "name": "Probability Independence (Anti-Circularity)",
       "status": "PASS",
-      "detail": "4 difficulties × valid step counts = 61 combos; RTP = survival × payoutMult = 0.9920 by construction. Max deviation: 2.22e-16 (worst: d=2 (m=3), k=4)"
+      "detail": "4 difficulties × valid step counts = 61 combos; RTP = survival × payoutMult = 0.9920 by construction, within the 1e-10 bound at every combo; counting anchor (all 2^20 death-point sets enumerated, no binomial in the path): counted survival equals survivalProbability and, in exact integer arithmetic, counted survival × the exact paid multiplier = the RTP table's exact row at all 61 cells (each row is held to the claim by RTP-CLAIM on this step, not here); negative control (edge 991/1000) rejected at all 61",
+      "data": {
+        "combosTested": 61,
+        "maxDeviation": 2.220446049250313e-16,
+        "bound": 1e-10,
+        "worstConfig": "d=2 (m=3), k=4",
+        "anchorMismatches": 0,
+        "exactIdentityFailures": 0,
+        "negativeControlAccepted": 0
+      },
+      "profileIds": [
+        "BEEF-18",
+        "BEEF-19"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-18",
+          "coverage": "full",
+          "note": "survival C(20−m,k)/C(20,k) on all 61 cells; since 2026-09-26 a COUNTING ANCHOR — all 2^20 death-point sets enumerated, no binomial in the survival path — must agree with it, and counted survival × the exact paid multiplier must equal 992/1000 in exact integer arithmetic at every cell; a NEGATIVE CONTROL (edge corrupted to 991/1000) must be rejected at every cell. No operator win-chance field is read (Phase E step_results carry win_chance; nothing reads it). FAIL probed (survivalProbability corrupted)"
+        },
+        {
+          "id": "BEEF-19",
+          "coverage": "full",
+          "note": "derived half: RTP per (difficulty, k) cell = 0.992 exactly by the identity above; a deviating cell FAILs (stricter than the profile's FLAG, since no cell deviates)"
+        }
+      ]
     },
     {
       "step": 17,
       "name": "Phase D — Client Seed Variation",
       "status": "PASS",
-      "detail": "800 bets, 16 distinct client seeds, difficulties: 1, 2, 3, 4; recomputation: 800/800 match"
+      "detail": "800 bets, 16 distinct client seeds, one per Phase D epoch (16), difficulties: 1, 2, 3, 4; recomputation: 800/800 match",
+      "data": {
+        "bets": 800,
+        "epochs": 16,
+        "distinctClientSeeds": 16,
+        "tested": 800,
+        "matched": 800,
+        "skipped": 0
+      },
+      "profileIds": [
+        "BEEF-06"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-06",
+          "coverage": "partial",
+          "note": "Phase D half: 800 bets bound to EXPECTED_PHASE_BETS.D, every one recomputed (a mismatch or unrevealed seed FAILs), 16 distinct player-set client seeds, one per Phase D epoch (reuse FAILs), all 4 difficulties. PARTIAL for the reasons on Step 6 (A–C generator not a CSPRNG; predictable Phase D seeds disclosed, exposed epochs not enumerated by a step)"
+        }
+      ]
     },
     {
       "step": 18,
       "name": "Simulation Results — Pass 1 Integrity",
       "status": "PASS",
-      "detail": "4,000,000 rounds × 4 configs; mean RTP=99.1468%; chi2: 0/4 uncorrected, 0/4 at Bonferroni α/4=0.002500; serial: 0/4 uncorrected, 0/4 at Bonferroni"
+      "detail": "4,000,000 rounds × 4 configs; chi2: 0/4 uncorrected, 0/4 at Bonferroni α/4=0.002500; serial: 0/4 uncorrected, 0/4 at Bonferroni; mean simulated RTP reported in this step's data block",
+      "data": {
+        "totalRounds": 4000000,
+        "configs": 4,
+        "avgSimulatedRTP": 0.9914679977708158,
+        "bonferroniAlpha": 0.0025,
+        "chi2FailsUncorrected": 0,
+        "chi2FailsBonferroni": 0,
+        "serialFailsUncorrected": 0,
+        "serialFailsBonferroni": 0
+      },
+      "profileIds": [
+        "BEEF-20"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-20",
+          "coverage": "partial",
+          "note": "what IS asserted: 4 difficulties × 1,000,000 rounds on pinned seed pairs (src/simulate.ts); the per-config position chi-squared and serial statistics are scored at Bonferroni α/4. PARTIAL: the p-values and RTP are READ from the artifact, not re-derived in verify from its rows (the artifact ships no per-position census), and no part of Pass 1 is replayed by verify; a test:full regeneration is field-diffed against the pinned artifact since 2026-09-26 (Step-independent reproduction gate)"
+        }
+      ]
     },
     {
       "step": 19,
       "name": "Simulation Results — Pass 2 Cherry-Pick Test",
       "status": "PASS",
-      "detail": "121 seeds × difficulty=2 (dpc=3); Test A: 0/121 fails (expected ≤2); Test B: 4/121 flags (≤14 = 2×7 threshold); 4 isolated-early, 0 broad — no cherry-picking detected"
-    },
-    {
-      "step": 23,
-      "name": "Artifact Integrity (pinned artifacts of record)",
-      "status": "PASS",
-      "detail": "2 artifact(s) checked against src/artifact-pins.ts; rtp-convergence.html matches its pin; simulation-results.json matches its pin"
+      "detail": "121 seeds × difficulty=2 (dpc=3), one step on tile 0 (the first stepped tile of all 6,450 captured rounds), every row bound to a dataset epoch, 121 early windows replayed from the revealed seeds; Test A: 0/121 fails, binomial p=1.000 (FAIL at p<0.01: 5 or more of 121); Test B: 2/121 isolated-early flags, binomial p=0.985 (FLAG at p<0.05: 11 or more; FAIL at p<0.01: 13 or more); both windows at p<0.05: 1/121 seed [c9ddfba9… client seed Ty1rZcxKscWFXxqt (early 36/50 p=0.010042, late 8,387/9,950 p=0.047777)], count p=P(K>=1 | Binomial(121, 0.05×0.05))=0.2613 (FLAG at p<0.05: 2 or more of 121; FAIL at p<0.01: 3 or more); both windows at p<0.001: 0/121 (FAIL at 1 or more); false-alarm rate on a fair game, rule's model / exact discrete window sizes (caps 5% FLAG, 1% FAIL): Test A FAIL 0.76% / 0.89%; Test B FLAG 4.0% / 1.3%, FAIL 0.77% / 0.18%; both-window count FLAG 3.7% / 2.9%, FAIL 0.36% / 0.25%; both windows at p<0.001 FAIL 0.012% / 0.024%; no cherry-picking detected; the seed off in both windows is a disclosed observation, within the count a fair game produces",
+      "data": {
+        "seedsTested": 121,
+        "firstStepTile": 0,
+        "capturedRoundsFirstStepNotThatTile": 0,
+        "testAFails": 0,
+        "testABinomialP": 1,
+        "cherryPickFlags": 2,
+        "testBBinomialP": 0.9851430153491129,
+        "broadBoth05": 1,
+        "broadBoth05CountP": 0.26131134778152854,
+        "broadBoth001": 0,
+        "thresholds": {
+          "testAFailAt": 5,
+          "testBFlagAt": 11,
+          "testBFailAt": 13,
+          "bothWindowFlagAt": 2,
+          "bothWindowFailAt": 3,
+          "bothWindowSevereFailAt": 1
+        },
+        "exactWindowSizes": {
+          "early05": 0.044249044826272156,
+          "late05": 0.04936161496131408,
+          "total01": 0.010388290516064429,
+          "early001": 0.0019495840229159737,
+          "late001": 0.0010220928622643485
+        },
+        "falseAlarm": {
+          "testAFail": {
+            "k": 5,
+            "model": 0.00763931071758428,
+            "exact": 0.008909398210102837
+          },
+          "testBFlag": {
+            "k": 11,
+            "model": 0.0404589588138462,
+            "exact": 0.013380690486528346
+          },
+          "testBFail": {
+            "k": 13,
+            "model": 0.007698170963551743,
+            "exact": 0.0018168745258037022
+          },
+          "bothWindowFlag": {
+            "k": 2,
+            "model": 0.03729799710875892,
+            "exact": 0.029176501659189946
+          },
+          "bothWindowFail": {
+            "k": 3,
+            "model": 0.003611778962477774,
+            "exact": 0.0024761042651957332
+          },
+          "severeFail": {
+            "k": 1,
+            "model": 0.0001209927402914257,
+            "exact": 0.000241082540772819
+          }
+        },
+        "perSeedBothWindowFlagNotUsed": {
+          "k": 1,
+          "model": 0.26131134778152854,
+          "exact": 0.232470046672409
+        },
+        "broadSeeds": [
+          {
+            "serverSeedHashed": "c9ddfba9fa8b23651529c4a5b56b037007c2223c4113e58a978598fe7121b568",
+            "clientSeed": "Ty1rZcxKscWFXxqt",
+            "earlyWins": 36,
+            "earlyP": 0.010041886590945737,
+            "lateWins": 8387,
+            "lateP": 0.0477766708040297
+          }
+        ],
+        "broadSeedsNote": "disclosed observation: each seed off in both windows at p<0.05; the count, not the seed, is scored",
+        "earlyWindowsReplayed": 121,
+        "issues": []
+      },
+      "profileIds": [
+        "BEEF-21"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-21",
+          "coverage": "partial",
+          "note": "what IS asserted: 121 revealed seeds × 10,000 nonces, one row per bet-bearing epoch bound to its serverSeedHashed/clientSeed; every round is one step on tile 0 (src/loader.ts SIM_FIRST_STEP_TILE), which must be the first stepped tile of all 6,450 captured rounds; every EARLY window (nonces 0–49 = the captured range) replayed from the revealed seed and its win count must match; early/late/Test-A p-values, flags, counts and both binomial p-values recomputed; FAIL/FLAG rule on the recomputed figures, every verdict-moving rule a count tested against the 121 seeds, with its false-alarm rate on a fair game computed and printed (rule model and exact discrete window sizes) and refused if over 5% for a FLAG or 1% for a FAIL. Until 2026-10-06 Pass 2 and this replay scored the rotating tile nonce % 20, which is not Beef's first-step rule (Mike's review, 6 Oct 2026). Seeds off in both windows at p < 0.05 are scored as a count, P(K >= k | Binomial(121, 0.05 × 0.05)): FLAG at k >= 2, FAIL at k >= 3 (a per-seed rule would false-alarm about 26% of fair games at 121 seeds); the 1 such seed is disclosed as an observation. PARTIAL: the board is a fixed difficulty 2 single step, not the configs each epoch actually served; late windows are read, not replayed; no detection power is printed"
+        }
+      ]
     },
     {
       "step": 20,
       "name": "Multi-Step Multiplier Chain (Phase E)",
       "status": "PASS",
-      "detail": "1085 step-multiplier pairs checked across 450 bets; 15 distinct (difficulty, k) combos; 0 mismatches"
+      "detail": "1085 step-multiplier pairs checked across 450 bets (0 without a complete step record); 15 distinct (difficulty, k) combos; exact rational at relative 1e-12 (worst deviation in this step's data block); 0 mismatches",
+      "data": {
+        "checked": 1085,
+        "mismatches": 0,
+        "relTol": 1e-12,
+        "worstRelativeDeviation": 9.625789473684209e-15
+      },
+      "profileIds": [
+        "BEEF-13",
+        "BEEF-17"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-13",
+          "coverage": "full",
+          "note": "rung arm: all 1,085 non-death Phase E step multipliers against the exact rational C(20,k)/C(20−m,k) at MULT_REL_TOL = 1e-12 (was 1e-6 absolute); worst measured 9.63e-15"
+        },
+        {
+          "id": "BEEF-17",
+          "coverage": "full",
+          "note": "per-step multipliers are captured (step_results) and every intermediate rung equals the formula at its depth; a bet with no complete step record (length ≠ reached_k) FAILs; population bound to 450 / E1–E4"
+        }
+      ]
     },
     {
       "step": 21,
       "name": "Death-Point Recomputation (Phase E)",
       "status": "PASS",
-      "detail": "450/450 Phase E bets verified (0 skipped — unrevealed seed); 0 mismatches"
+      "detail": "450/450 Phase E bets verified (0 skipped — unrevealed seed); 0 mismatches",
+      "profileIds": [
+        "BEEF-07",
+        "BEEF-17"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-07",
+          "coverage": "full",
+          "note": "Phase E half: 450/450 multi-step rounds recomputed to the served death-point set; an unrevealed seed FAILs"
+        },
+        {
+          "id": "BEEF-17",
+          "coverage": "full",
+          "note": "the death-point set recomputed from the seed is the served one for every multi-step round"
+        }
+      ]
     },
     {
       "step": 22,
       "name": "Cash-Out Payout Correctness (k>1)",
       "status": "PASS",
-      "detail": "202 winning Phase E bets at k>1 verified; 0 errors; distribution: k=2:27, k=3:67, k=5:108"
+      "detail": "202/202 winning Phase E bets verified at their planned target k>1 (0 off-plan); 0 errors; distribution: k=2:27, k=3:67, k=5:108; 248/248 Phase E losses credit exactly \"0\"",
+      "profileIds": [
+        "BEEF-11",
+        "BEEF-17"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-11",
+          "coverage": "full",
+          "note": "Phase E half: every win must be a cash-out at its planned target k > 1 (off-plan FAILs) and credit amount × raw × 0.992 at MONEY_REL_TOL (202/202); since 2026-09-26 every Phase E loss must credit exactly \"0\" (248/248) — before that no Phase E loss carried a payout assertion"
+        },
+        {
+          "id": "BEEF-17",
+          "coverage": "full",
+          "note": "the cash-out pays stake × the rung multiplier at its target depth (k = 5 / 3 / 5 / 2 for E1–E4)"
+        }
+      ]
+    },
+    {
+      "step": 23,
+      "name": "Artifact Integrity (pinned artifacts of record)",
+      "status": "PASS",
+      "detail": "4 artifact(s) checked against src/artifact-pins.ts; chi-squared-results.json matches its pin; determinism-log.json matches its pin; rtp-convergence.html matches its pin; simulation-results.json matches its pin; every one of the 1083 numeric leaves of the committed JSON artifacts lies in its declared value domain (src/domains.ts) and none is undeclared",
+      "data": {
+        "checked": 4,
+        "mismatches": 0,
+        "files": [
+          {
+            "file": "chi-squared-results.json",
+            "pin": "65857a46ab1d0d4acfe0c46ceaa264f22a112358895643160bc5605310451ca0",
+            "actual": "65857a46ab1d0d4acfe0c46ceaa264f22a112358895643160bc5605310451ca0",
+            "match": true
+          },
+          {
+            "file": "determinism-log.json",
+            "pin": "88bc153e2d6e867f375c0cf8138491185761cdb3150e4c921a0746ecf5a7b3c2",
+            "actual": "88bc153e2d6e867f375c0cf8138491185761cdb3150e4c921a0746ecf5a7b3c2",
+            "match": true
+          },
+          {
+            "file": "rtp-convergence.html",
+            "pin": "2633e8f87d9ed124b1c32c604c25291108ee5af775f8e2405e0ef3538e97d066",
+            "actual": "2633e8f87d9ed124b1c32c604c25291108ee5af775f8e2405e0ef3538e97d066",
+            "match": true
+          },
+          {
+            "file": "simulation-results.json",
+            "pin": "d49f95a23cbd3d6839761fdefc19c3ffa4103a42bd2b892eb7511a54ea5af358",
+            "actual": "d49f95a23cbd3d6839761fdefc19c3ffa4103a42bd2b892eb7511a54ea5af358",
+            "match": true
+          }
+        ],
+        "domainLeavesChecked": 1083,
+        "domainProblems": []
+      },
+      "profileIds": [
+        "BEEF-27"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-27",
+          "coverage": "full",
+          "note": "every pinned artifact (chi-squared-results.json, determinism-log.json, rtp-convergence.html, simulation-results.json) is hash-checked against src/artifact-pins.ts, an absent or altered one FAILs; each is un-ignored by name in .gitignore; verify writes only to outputs/run/ unless PF_EMIT=1; no artifact of record carries run metadata (simulation-results.json lost generatedAt + 2 executionTimeMs and was re-pinned; verification-results.json lost generatedAt, so the reproduction gate excludes no field); and — added 2026-09-26, ported from Duel Crash/Dice — every numeric leaf of the three committed JSON artifacts (1,083 leaves) is validated against a value domain in src/domains.ts (bounds from src/loader.ts — the simulation plan moved there from src/simulate.ts, values unchanged — and src/rng.ts, never from the artifact) in both directions: inside its domain, and covered by a rule. verification-results.json is the verifier's own output and is bound by the reproduction gate, not a pin (as Duel Crash). FAIL probed (M23b: an impossible recomputation count written and re-pinned)"
+        }
+      ]
+    },
+    {
+      "step": 24,
+      "name": "Multiplier Monotonicity & Bounds (BEEF-14)",
+      "status": "PASS",
+      "detail": "declared table: all 61 (difficulty, k) cells of C(20,k)/C(20−m,k) × 992/1000 compared exactly — strictly increasing in depth on 57/57 pairs and in difficulty on 42/42 pairs; served: 5422 raw + 4337 paid multipliers in 15 observed cells, strictly increasing on 11 depth and 11 difficulty pairs of observed cells; cap: none declared (declarations/duel.beef.json gameModel.limits.maxOdds = null), so no served value or formula cell can exceed one — largest served and formula multipliers are in this step's data block",
+      "data": {
+        "formulaCells": 61,
+        "formulaDepthPairs": 57,
+        "formulaDifficultyPairs": 42,
+        "servedRaw": 5422,
+        "servedPaid": 4337,
+        "observedCells": 15,
+        "servedDepthPairs": 11,
+        "servedDifficultyPairs": 11,
+        "declaredMaxOdds": null,
+        "largestServedPaidMultiplier": 1.984,
+        "largestFormulaMultiplier": 183277.952,
+        "violations": []
+      },
+      "profileIds": [
+        "BEEF-14"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-14",
+          "coverage": "full",
+          "note": "added 2026-09-26, FLAG-only (R2): all 61 (difficulty, k) cells of C(20,k)/C(20−m,k) × 992/1000 compared as exact rationals — strictly increasing in depth (57/57 pairs) and in difficulty (42/42 pairs), counts derived from DEATH_POINTS_BY_DIFFICULTY and bound; the served multipliers Steps 8/20 bind to the formula (5,422 raw + 4,337 paid, 15 observed cells) strictly increasing across every adjacent observed pair (11 depth, 11 difficulty). Cap half: declarations/duel.beef.json gameModel.limits.maxOdds = null — Duel declares no max-odds cap for Beef, so there is no cap to hold a served value against and no formula cell above one; the largest served paid (1.984) and formula (183,277.952) multipliers are printed. Measured 0 violations. FLAG probed (M24: a served difficulty-2 k=1 multiplier set below the difficulty-1 cell)"
+        }
+      ]
+    },
+    {
+      "step": 25,
+      "name": "Live-Sample Fit (informational, BEEF-22)",
+      "status": "PASS",
+      "detail": "the 6450 live rounds' death-point positions fit the uniform 20-tile lattice per difficulty (without-replacement-corrected χ², df 19) and the win rates of the 4 primary difficulties and the 4 Phase E sub-phases fit the binomial (two-sided exact); all 12 tests p ≥ 0.0008333333333333334 (Bonferroni 0.01/12); informational — the distribution is proven by Steps 5, 16 and 18. Statistics in this step's data block.",
+      "data": {
+        "tests": 12,
+        "alpha": 0.0008333333333333334,
+        "positions": {
+          "difficulty1": {
+            "rounds": 1300,
+            "pearson": 18.307692307692307,
+            "corrected": 18.307692307692307,
+            "df": 19,
+            "p": 0.5019807933875724
+          },
+          "difficulty2": {
+            "rounds": 1500,
+            "pearson": 33.857777777777784,
+            "corrected": 37.841045751634,
+            "df": 19,
+            "p": 0.00621719768308493
+          },
+          "difficulty3": {
+            "rounds": 1350,
+            "pearson": 5.982222222222222,
+            "corrected": 7.577481481481482,
+            "df": 19,
+            "p": 0.9904404531984987
+          },
+          "difficulty4": {
+            "rounds": 2300,
+            "pearson": 9.563478260869568,
+            "corrected": 18.170608695652177,
+            "df": 19,
+            "p": 0.511070235597502
+          }
+        },
+        "winRates": {
+          "primary-difficulty1": {
+            "n": 1200,
+            "wins": 1132,
+            "pWin": 0.95,
+            "p": 0.3201124921915035
+          },
+          "primary-difficulty2": {
+            "n": 1400,
+            "wins": 1198,
+            "pWin": 0.85,
+            "p": 0.5786605736125727
+          },
+          "primary-difficulty3": {
+            "n": 1200,
+            "wins": 903,
+            "pWin": 0.75,
+            "p": 0.8718992613232328
+          },
+          "primary-difficulty4": {
+            "n": 2200,
+            "wins": 1104,
+            "pWin": 0.5,
+            "p": 0.8813682263809015
+          },
+          "E1": {
+            "n": 100,
+            "wins": 76,
+            "pWin": 0.75,
+            "p": 0.9233422641628051
+          },
+          "E2": {
+            "n": 100,
+            "wins": 67,
+            "pWin": 0.5964912280701754,
+            "p": 0.16030130022940225
+          },
+          "E3": {
+            "n": 150,
+            "wins": 32,
+            "pWin": 0.19369195046439627,
+            "p": 0.6024222985725554
+          },
+          "E4": {
+            "n": 100,
+            "wins": 27,
+            "pWin": 0.23684210526315788,
+            "p": 0.5004893721917207
+          }
+        }
+      },
+      "profileIds": [
+        "BEEF-22"
+      ],
+      "profileChecks": [
+        {
+          "id": "BEEF-22",
+          "coverage": "full",
+          "note": "added 2026-09-26, informational (a deviation is INFO — reported, never counted, verdict unchanged; profile policy INFORMATIONAL, Mike 2026-09-29): death-point positions of all 6,450 rounds per difficulty against the uniform 20-tile lattice (Pearson × 19/(20 − m), the without-replacement correction, vs χ²(19)) and win rates of the 4 primary difficulties (P = (20 − m)/20) and the 4 Phase E sub-phases (P = C(20−m,k)/C(20,k) at target_k) against the binomial (two-sided exact); 12 tests at Bonferroni 0.01/12. Measured: all 12 above the bound; the smallest is difficulty-2 positions p = 0.0062 (above 0.01/12 = 0.00083, below an unadjusted 0.01). INFO probed (M25: every death point counted on tile t mod 10)"
+        }
+      ]
     }
   ],
+  "profileCoverage": {
+    "game": "beef",
+    "profileVersion": "1.0.2",
+    "notApplicable": [
+      {
+        "id": "BEEF-16",
+        "reason": "applies = { path: money.balanceField, notNull: true } is false — the declaration sets money.balanceField = null. declarationTruth measured 2026-09-26: a key walk over every record of data/beef-master-6000bets.json and data/beef-phaseE-450bets.json (meta, 139 seed records, 6,450 bets, every Phase E step record) finds NO key matching /balance|wallet/i, so there is no consecutive-bet wallet delta to reconcile. The settle-response credit is verified instead (Steps 7, 10, 22)"
+      }
+    ],
+    "packageChecks": [
+      {
+        "id": "BEEF-09",
+        "artifact": "tests/beef/BeefTests.ts (Operator source block) + src/rng.ts OPERATOR_SOURCE_CITES + src/operator-verifier.ts + Step 5",
+        "coverage": "full",
+        "note": "CLOSED 2026-09-26 (was partial: Duel's Beef Verify-tab code was not in the workspace). Duel's own Beef Verify-tab code, pasted by Paulo from duel.com Verify tab 2026-09-26, is vendored verbatim at evidence/verify-tab/duel-verify-tab-beef-2026-09-26.js (E06, SHA-256 43ba4dfb…, never edited) and pinned with its runner in src/operator-verifier.ts. The asserts, each met: (1) \"unit tests reproduce at least one captured bet … against the operator's published algorithm\" — the Operator source block in tests/beef/BeefTests.ts EXECUTES the pinned file with only its five \"User input values\" filled in (gridSize 20, deathPointsCount from the served difficulty) on all 6,450 captured rounds of both datasets: its death points equal the served ones and src/rng.ts on 6,450/6,450; (2) \"fixed vectors\" — the 7 known-answer bets through the same file, returned set and printed line both exact; (3) \"the adapter cites the operator source line it ports\" — src/rng.ts OPERATOR_SOURCE_CITES names 17 lines of the pinned file, each checked verbatim (17/17). Step 5 runs the same execution in the verifier. The earlier unit tests stay (7 vectors × 4 difficulties, hex-key control, tampered-seed control, full recompute). FAIL probed: M05e (a line of the file changed AND re-pinned), M05f (file byte, no re-pin), M05g (runner byte, no re-pin), M05h (runner forged AND re-pinned), M05i (a citation moved). Not established: that the Verify button, or Duel's server, runs exactly this code"
+      },
+      {
+        "id": "BEEF-23",
+        "artifact": "MANIFEST.md#adversarial-matrix",
+        "coverage": "full",
+        "note": "rewritten 2026-09-26 to the framework rows S5-1 … S5-8, each a Pass / Flag / Not tested — disclosed verdict tied to a scored step: S5-1 seed substitution [Steps 1, 2, 14], S5-2 client seed [Steps 6, 17], S5-3 stake-conditional [Step 10], S5-4 server-seed cherry-picking [Step 19], S5-5 seed-rotation race (Not tested — disclosed), S5-6 multiplier tampering [Steps 7, 8, 20, 22], S5-7 nonce manipulation [Step 4], S5-8 range-mapping bias [Steps 5, 18]; the former S5-01…S5-10 rows are kept below as supplementary rows"
+      },
+      {
+        "id": "BEEF-25",
+        "artifact": "MANIFEST.md#verify-a-bet",
+        "coverage": "full",
+        "note": "since 2026-09-26 the package carries an ordered seven-step \"Verify one of your own rounds\" (MANIFEST \"Verify a bet\") paste-path in the declaration's field names (the Duel Dice DICE-25 pattern): (1) where the seed is revealed — rotate in the Beef Provably Fair panel (E02); (2) which fields to paste — serverSeed, seed.serverSeedHashed, seed.clientSeed, seed.nonce (0-based), request.difficulty_level and the served response.* fields; (3) the commitment encoding SHA-256(hex_decode(serverSeed)) == seed.serverSeedHashed; (4) the backward Fisher–Yates with the message ${clientSeed}:${nonce}:${cursor} and uint32 rejection; (5) the death-point count per difficulty (1/3/5/10); (6) the 0-based fixed-prefix path numbering and the win rule; (7) the multiplier and payout formula"
+      },
+      {
+        "id": "BEEF-28",
+        "artifact": "package.json + tests/verify.ts + MANIFEST.md#reproduce-the-audit",
+        "coverage": "full",
+        "note": "measured 2026-09-26 on a fresh `git clone` of ProvablyFair-org/pf-duel-workspace origin/main @ 79aa65b (games/beef at 8f13658), Node v22.23.1: npm ci exit 0; npm test exit 0 — 21 passing, 22/23 + 1 capture-origin FLAG, Full Pass, REPRODUCED, outputs/run/verification-results.json byte-identical to the committed file; npm run test:full exit 0 in 136 s — the regenerated simulation-results.json and rtp-convergence.html byte-identical to the pinned files. The same npm ci + npm test was re-run on a copy of exactly the files this round will commit (git ls-files incl. untracked-not-ignored) — see MANIFEST. npm test never runs simulate; verify writes only to outputs/run/; engines node 22.x; audit ID PF-2026-DL06; step counts in README/MANIFEST = 25 (23 until Steps 24–25 were added later on 2026-09-26; the fresh-clone runs above predate them)"
+      },
+      {
+        "id": "BEEF-29",
+        "artifact": "tests/mutations.json + scripts/mutate.mjs",
+        "coverage": "full",
+        "note": "added 2026-09-26 (runner ported from Duel Video Poker): a step-named registry of mutations (38 on 2026-09-26; 42 since 2026-10-06, when M19b–M19e were added for Step 19) run in a disposable copy by `npm run mutate` (300 s hard timeout per run); each names the step that must die and a marker that must appear, so the INTENDED guard fires; includes forgeries that edit a pinned artifact AND re-pin it (M18, M19) and a site-verifier forgery re-pinned (M05c). Measured 2026-09-26 (re-run after Steps 24–25 and M23b/M24/M25 were added): 33/33 killed; re-run the same day after Duel's Verify-tab code was wired into Step 5 (M05e–M05i added: operator file forged AND re-pinned, file and runner edited without re-pin, runner forged AND re-pinned, a citation moved): 38/38 killed, 25/25 scored steps have a killing mutation (the runner reads the scored steps from the baseline run). No declared survivors. The result of the latest run is declared in RELEASE-MANIFEST.json (falsifiability)"
+      },
+      {
+        "id": "BEEF-30",
+        "artifact": "MANIFEST.md#limitations-and-trust + MANIFEST.md#evidence",
+        "coverage": "full",
+        "note": "MANIFEST.md carries (since 2026-09-26; DL-10 added 2026-10-05, DL-11 2026-10-06) the declared-limitations register DL-1 … DL-11, each with its measured magnitude and where it is enforced or disclosed, and the Load-Bearing Premises table with ASSUMED markers; MANIFEST Evidence numbers every exhibit E01–E07 with its role and both dataset SHA-256; no internal QA folder ships"
+      }
+    ]
+  },
   "info": [
     {
       "label": "RTP Analysis",
@@ -150,19 +1214,13 @@
     {
       "label": "Win Rate Chi-Squared (per-difficulty, aggregated by step count)",
       "detail": "4 difficulty groups tested; fails at α=0.01: 0/4; min p=0.2893; Bonferroni α/4=0.002500"
-    },
-    {
-      "label": "Serial Independence (lag-1 autocorrelation on difficulty_level sequence)",
-      "detail": "r₁=0.097516, z=7.554 (|z|>3 — structured phase ordering; see simulation for definitive test). Underpowered at live sample size — see simulation for definitive test."
-    },
-    {
-      "label": "Serial Independence (Wald-Wolfowitz runs test on difficulty_level sequence)",
-      "detail": "runs=2400, expected=2947.7, z=-14.398, p=0.0000. Underpowered at live sample size — see simulation for definitive test."
     }
   ],
   "summary": {
-    "passed": 23,
-    "flags": 0,
+    "passed": 24,
+    "flags": 1,
+    "operatorFlags": 0,
+    "captureFlags": 1,
     "hardFail": 0,
     "verdict": "PROVABLY FAIR — Full Pass"
   }

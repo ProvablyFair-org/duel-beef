@@ -3,16 +3,24 @@
  *
  * Pass 1 — Fresh random seeds (4 configs × 1,000,000 rounds = 4M rounds).
  *   Grid: 20 tiles. Difficulty levels: 1,2,3,4 with deathPointsCount 1,3,5,10.
- *   Strategy: reveal tile (nonce % 20). Win if tile is NOT a death point.
+ *   Strategy: reveal tile (nonce % 20). Win if tile is NOT a death point. On fresh auditor seeds every tile
+ *   carries the same death probability m/20 and the nonces are independent, so the choice of tile does not
+ *   change the distribution Pass 1 tests; Pass 2, on the casino's own seeds, uses Beef's actual first tile.
  *   Payout: theoreticalMultiplier(dpc, 1, 0.008) on win, 0 on loss.
  *   Theoretical RTP per config: survivalProb(m, 1) × payoutMult(m, 1) = 0.992 for all m.
  *   Chi-squared on 20-bin death position frequencies, serial independence per config.
  *
  * Pass 2 — Casino seeds (10,000 nonces per revealed seed, difficulty=2 / MEDIUM).
+ *   Each round is one step on tile 0 (SIM_FIRST_STEP_TILE), the first tile of every Beef round. Until
+ *   2026-10-06 Pass 2 checked the rotating tile nonce % 20, which is not Beef's first-step rule.
  *   Test A: chi-squared on full nonce range vs binomial win/loss at ~85% win rate.
- *   Test B: early epoch (0–49) vs late (50–9999) — cherry-pick detection.
+ *   Test B: early epoch (0–49) vs late (50–9999) — cherry-pick detection. The early window is tested on
+ *   its own because seed selection need not bias the whole nonce range: a seed could be chosen on the
+ *   nonces a player reaches first and look ordinary after them.
  *
- * Output: outputs/simulation-results.json, outputs/rtp-convergence.html
+ * Output: outputs/run/simulation-results.json, outputs/run/rtp-convergence.html — run products.
+ *   The COMMITTED copies in outputs/ are pinned artifacts of record (src/artifact-pins.ts) and
+ *   are rewritten only under PF_EMIT=1, which is a deliberate regeneration and a re-pin.
  */
 
 import * as fs   from 'fs';
@@ -21,20 +29,22 @@ import * as path from 'path';
 import { computeDeathPointsFromBuffer, theoreticalMultiplier, survivalProbability,
          GRID_SIZE, HOUSE_EDGE, DEATH_POINTS_BY_DIFFICULTY } from './rng';
 import { chiSquaredTest, lag1Autocorrelation, runsTest }     from './stats';
-import { loadDataset, buildSeedMap }                          from './loader';
+import { loadDataset, buildSeedMap, SIM_DIFFICULTIES, SIM_ROUNDS_PER_CONFIG, SIM_NONCES_PER_SEED,
+         SIM_EPOCH_LENGTH, SIM_CONVERGENCE_SAMPLES, SIM_PASS2_DIFFICULTY, SIM_FIRST_STEP_TILE } from './loader';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const DIFFICULTIES: Array<1|2|3|4> = [1, 2, 3, 4];
-const ROUNDS_PER_CONFIG   = 1_000_000;
-const NONCES_PER_SEED     = 10_000;
-const EPOCH_LENGTH        = 50;
+// The plan lives in src/loader.ts (since 2026-09-26) so src/domains.ts can bound the artifact by it.
+const DIFFICULTIES: Array<1|2|3|4> = [...SIM_DIFFICULTIES];
+const ROUNDS_PER_CONFIG   = SIM_ROUNDS_PER_CONFIG;
+const NONCES_PER_SEED     = SIM_NONCES_PER_SEED;
+const EPOCH_LENGTH        = SIM_EPOCH_LENGTH;
 const THEORETICAL_RTP     = 1 - HOUSE_EDGE; // 0.992
-const CONVERGENCE_SAMPLES = [1_000, 5_000, 10_000, 50_000, 100_000, 500_000, 1_000_000];
+const CONVERGENCE_SAMPLES = [...SIM_CONVERGENCE_SAMPLES];
 
 // Representative difficulty for Pass 2 — MEDIUM (deathPointsCount=3) gives
 // 85% first-step win chance, a good balance of sample size and variance.
-const PASS2_DIFFICULTY = 2 as const;
+const PASS2_DIFFICULTY = SIM_PASS2_DIFFICULTY;
 const PASS2_DPC        = DEATH_POINTS_BY_DIFFICULTY[PASS2_DIFFICULTY];
 
 // ── Pinned simulation seeds — one unique pair per config (4 total) ──────────
@@ -299,8 +309,7 @@ for (let si = 0; si < seedEntries.length; si++) {
   for (let nonce = 0; nonce < NONCES_PER_SEED; nonce++) {
     const deaths    = computeDeathPointsFromBuffer(keyBuf, clientSeed, nonce, PASS2_DPC);
     const deathSet  = new Set(deaths);
-    const revealTile = nonce % GRID_SIZE;
-    const won       = !deathSet.has(revealTile);
+    const won       = !deathSet.has(SIM_FIRST_STEP_TILE);
 
     if (won) {
       if (nonce < EPOCH_LENGTH) earlyWins++;
@@ -361,7 +370,16 @@ console.log(`  Time: ${(pass2ElapsedMs / 1000).toFixed(1)}s\n`);
 //  Write output
 // ══════════════════════════════════════════════════════════════════════════════
 
-const OUTPUTS_DIR = path.join(__dirname, '..', 'outputs');
+// A SIMULATION RUN MUST NOT REWRITE THE ARTIFACT IT FEEDS. simulation-results.json is read by
+// Steps 18–19 and pinned by Step 23; rtp-convergence.html is committed. Until this release
+// `npm test` chained this script and overwrote both on every run — fresh random seeds, fresh
+// last bits, and the committed evidence drifted under the verifier that scores it. Run products
+// go to outputs/run/ (gitignored). The committed copies are refreshed only by PF_EMIT=1.
+const PF_EMIT = process.env.PF_EMIT === '1';
+const OUTPUTS_DIR = PF_EMIT
+  ? path.join(__dirname, '..', 'outputs')
+  : path.join(__dirname, '..', 'outputs', 'run');
+const WROTE_TO = PF_EMIT ? 'outputs' : 'outputs/run';
 fs.mkdirSync(OUTPUTS_DIR, { recursive: true });
 
 const pass1Serializable = pass1Results.map(r => ({
@@ -381,13 +399,15 @@ const pass1Serializable = pass1Results.map(r => ({
 }));
 
 const output = {
-  generatedAt: new Date().toISOString(),
+  // NO `generatedAt`: this file is pinned by SHA-256 (src/artifact-pins.ts), and a run timestamp
+  // inside a pinned artifact makes the pin unreproducible even when every figure is identical.
+  // Nor `executionTimeMs` (removed 2026-09-26, profile BEEF-27): wall-clock time is run metadata;
+  // the elapsed times are printed to the console only.
   pass1_fresh_seeds: {
-    description: 'Auditor-generated random seeds. Validates independent implementation, death-point position uniformity, and serial independence.',
+    description: 'Auditor-generated random seeds. Exercises the package RNG (src/rng.ts, checked against Duel\'s Verify-tab code), death-point position uniformity, and serial independence.',
     configs:                 DIFFICULTIES.length,
     roundsPerConfig:         ROUNDS_PER_CONFIG,
     totalRounds:             DIFFICULTIES.length * ROUNDS_PER_CONFIG,
-    executionTimeMs:         pass1ElapsedMs,
     avgTheoreticalRTP:       pass1AvgTheoRTP,
     avgSimulatedRTP:         pass1AvgRTP,
     chi2FailsAtAlpha01:      pass1Chi2Fails,
@@ -398,7 +418,7 @@ const output = {
     results:                 pass1Serializable,
   },
   pass2_casino_seeds: {
-    description: 'Revealed casino server seeds from capture dataset. Tests whether seed selection produces biased distributions over the first epoch vs later nonces (cherry-picking detection).',
+    description: 'Revealed casino server seeds from capture dataset. Each round is one step on tile 0, the first tile of every Beef round. Tests whether seed selection produces biased distributions over the first epoch vs later nonces (cherry-picking detection).',
     seeds_tested:                 seedEntries.length,
     difficulty:                   PASS2_DIFFICULTY,
     death_points_count:           PASS2_DPC,
@@ -411,7 +431,6 @@ const output = {
     test_b_cherry_pick_flags:     cherryPickFlags,
     test_b_binomial_pValue:       cherryPValue,
     test_b_verdict:               cherryVerdict,
-    executionTimeMs:              pass2ElapsedMs,
     results:                      pass2Results,
   },
 };
@@ -423,12 +442,19 @@ fs.writeFileSync(path.join(OUTPUTS_DIR, 'simulation-results.json'), JSON.stringi
 const finalPoint = convergenceData[convergenceData.length - 1];
 const finalRTP   = finalPoint.meanRTP;
 
+// Chart.js is INLINED into the pinned chart (Mike 2026-09-28, F16): a pinned artifact that loads a script
+// from a CDN renders only while a third party serves the same bytes. The library is read verbatim from the
+// npm package pinned (exact version) in package.json / package-lock.json and interpolated as a value.
+const CHARTJS_VERSION = '4.4.7';
+const CHARTJS_SOURCE = fs.readFileSync(path.join(path.dirname(require.resolve('chart.js')), 'chart.umd.js'), 'utf8');
+
 const chartHTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>DUEL.COM BEEF RTP CONVERGENCE \u2014 ${DIFFICULTIES.length} CONFIGS x 1M ROUNDS EACH</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"><\/script>
+<!-- Chart.js ${CHARTJS_VERSION} dist/chart.umd.js inlined verbatim from the npm package pinned in package-lock.json -->
+<script>${CHARTJS_SOURCE}<\/script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #fafafa; padding: 24px; }
@@ -511,6 +537,8 @@ new Chart(ctx, {
 fs.writeFileSync(path.join(OUTPUTS_DIR, 'rtp-convergence.html'), chartHTML);
 
 console.log('\u2550'.repeat(60));
-console.log('  Written: outputs/simulation-results.json');
-console.log('  Written: outputs/rtp-convergence.html');
+console.log(`  Written: ${WROTE_TO}/simulation-results.json`);
+console.log(`  Written: ${WROTE_TO}/rtp-convergence.html`);
+if (!PF_EMIT) console.log('  Committed artifacts NOT modified.');
+else console.log('  REPORT GENERATION (PF_EMIT=1): the committed simulation artifacts were rewritten — re-pin them in src/artifact-pins.ts in the same commit.');
 console.log('\u2550'.repeat(60) + '\n');

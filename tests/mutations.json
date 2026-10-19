@@ -1,0 +1,524 @@
+[
+ {
+  "name": "M01 a revealed server seed corrupted",
+  "step": 1,
+  "expect": "[FAIL] Step 1",
+  "guard": "BEEF-01: every revealed seed must hash to its commitment.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "ds.seeds[10].seed.serverSeed = '00'.repeat(32); // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M02 a forward commitment link broken",
+  "step": 2,
+  "expect": "[FAIL] Step 2",
+  "guard": "BEEF-02: each seed's next-seed hash must equal the following seed's active hash.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "ds.seeds[30].seed.nextServerSeedHash = '0'.repeat(64); // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M02b a Phase E forward link broken",
+  "step": 2,
+  "expect": "[FAIL] Step 2",
+  "guard": "BEEF-02: the Phase E chain is checked too (2026-09-26).",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "if (phaseE) phaseE.seeds[5].seed.nextServerSeedHash = '0'.repeat(64); // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M03 a bet carries a hash from another epoch",
+  "step": 3,
+  "expect": "[FAIL] Step 3",
+  "guard": "BEEF-03: epochs come from the rotation timeline.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "ds.bets[10].seed.serverSeedHashed = ds.bets[3000].seed.serverSeedHashed; // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M03b a Phase E bet carries a foreign client seed",
+  "step": 3,
+  "expect": "[FAIL] Step 3",
+  "guard": "BEEF-03: the Phase E timeline is checked too (2026-09-26).",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "if (phaseE) phaseE.bets[60].seed.clientSeed = 'forged-client-seed'; // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M04 a nonce served twice",
+  "step": 4,
+  "expect": "[FAIL] Step 4",
+  "guard": "BEEF-04: a duplicated nonce is an operator-side FAIL.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "ds.bets[5].seed.nonce = ds.bets[4].seed.nonce; // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M04b the Phase E capture gap declared at the wrong nonce",
+  "step": 4,
+  "expect": "[FAIL] Step 4",
+  "guard": "BEEF-04: Phase E gaps are bound by identity (2026-09-26).",
+  "file": "src/loader.ts",
+  "find": "nonce: 31 },",
+  "replace": "nonce: 30 },",
+  "runner": "verify"
+ },
+ {
+  "name": "M05 a served death-point set altered",
+  "step": 5,
+  "expect": "[FAIL] Step 5",
+  "guard": "BEEF-07: every bet recomputes to its served death points.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "ds.bets[200].response.mines_positions = ds.bets[200].response.mines_positions.map((p: number) => (p + 1) % 20); // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M05b site verifier derive.js edited without re-pin",
+  "step": 5,
+  "expect": "vendored site verifier does not match its pinned SHA-256",
+  "guard": "BEEF-24: the vendored site verifier must hash to its pin.",
+  "file": "verifier-parity/games/beef/derive.js",
+  "find": "const HOUSE_EDGE_FACTOR = 0.992;",
+  "replace": "const HOUSE_EDGE_FACTOR = 0.992; ",
+  "runner": "verify"
+ },
+ {
+  "name": "M05c site verifier multiplier forged and re-pinned",
+  "step": 5,
+  "expect": "site cashoutMultiplier off",
+  "guard": "BEEF-24: the site's paid multiplier is executed and compared.",
+  "file": "verifier-parity/games/beef/derive.js",
+  "find": "const HOUSE_EDGE_FACTOR = 0.992;",
+  "replace": "const HOUSE_EDGE_FACTOR = 0.991;",
+  "repin": [
+   {
+    "file": "src/site-verifier.ts",
+    "find": "0003d6347506334f27b2159d73d6552cd19c39d52348dd97e6270b6293e592d3",
+    "hashOf": "verifier-parity/games/beef/derive.js"
+   }
+  ],
+  "runner": "verify"
+ },
+ {
+  "name": "M05d acceptance window no longer a whole number of ranges",
+  "step": 5,
+  "expect": "accepted window is NOT a whole number of ranges",
+  "guard": "BEEF-08: the draw-bias bound is measured from drawFromChunk.",
+  "file": "src/rng.ts",
+  "find": "  return MAX_UINT32 - (MAX_UINT32 % range);",
+  "replace": "  return MAX_UINT32;",
+  "runner": "verify"
+ },
+ {
+  "name": "M05e operator Verify-tab file logic changed (key bytes XOR 1) and re-pinned",
+  "step": 5,
+  "runner": "verify",
+  "expect": "OPERATOR VERIFY-TAB CODE PARITY (BEEF-09)",
+  "guard": "BEEF-09: forged evidence — Duel's vendored Beef Verify-tab code is changed on an uncited line AND its SHA-256 pin re-computed, so the hash check accepts it; executing it on every round must expose it.",
+  "edits": [
+   {
+    "file": "evidence/verify-tab/duel-verify-tab-beef-2026-09-26.js",
+    "find": "bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);",
+    "replace": "bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16) ^ 1;"
+   }
+  ],
+  "repin": [
+   {
+    "file": "src/operator-verifier.ts",
+    "find": "43ba4dfbd068cbf5dde917a5432ef664df2ef68f4fabc91f516ed220ed5564f6",
+    "hashOf": "evidence/verify-tab/duel-verify-tab-beef-2026-09-26.js"
+   }
+  ]
+ },
+ {
+  "name": "M05f operator Verify-tab file byte changed without re-pin",
+  "step": 5,
+  "runner": "verify",
+  "expect": "does not match its pinned SHA-256",
+  "guard": "BEEF-09: the vendored operator file must hash to its pin before it runs.",
+  "file": "evidence/verify-tab/duel-verify-tab-beef-2026-09-26.js",
+  "find": "// Code written in javascript",
+  "replace": "// Code written in JavaScript"
+ },
+ {
+  "name": "M05g operator runner changed without re-pin",
+  "step": 5,
+  "runner": "verify",
+  "expect": "does not match its pinned SHA-256",
+  "guard": "BEEF-09: the runner that executes the operator file is pinned too.",
+  "file": "verifier-parity/operator/run-operator-verifier.cjs",
+  "find": "const ROUND_TIMEOUT_MS = 30_000;",
+  "replace": "const ROUND_TIMEOUT_MS = 31_000;"
+ },
+ {
+  "name": "M05h operator runner forged (calls the file with nonce + 1) and re-pinned",
+  "step": 5,
+  "runner": "verify",
+  "expect": "OPERATOR VERIFY-TAB CODE PARITY (BEEF-09)",
+  "guard": "BEEF-09: a re-pinned runner that feeds the operator code the wrong input must be caught by comparing its output with the served death points, not only by the pin.",
+  "edits": [
+   {
+    "file": "verifier-parity/operator/run-operator-verifier.cjs",
+    "find": "const CALL = (m) => m.generateDeathPoints(m.serverSeed, m.clientSeed, m.nonce, m.gridSize, m.deathPointsCount);",
+    "replace": "const CALL = (m) => m.generateDeathPoints(m.serverSeed, m.clientSeed, m.nonce + 1, m.gridSize, m.deathPointsCount);"
+   }
+  ],
+  "repin": [
+   {
+    "file": "src/operator-verifier.ts",
+    "find": "729473f5a8c7c4d54e59a2cfa67365e64af024aa7ddf634fcfe97d3beccffcee",
+    "hashOf": "verifier-parity/operator/run-operator-verifier.cjs"
+   }
+  ]
+ },
+ {
+  "name": "M05i src/rng.ts cites an operator line that does not carry the quoted text",
+  "step": 5,
+  "runner": "verify",
+  "expect": "src/rng.ts operator citations",
+  "guard": "BEEF-09: every citation in src/rng.ts OPERATOR_SOURCE_CITES must quote the pinned operator file at the line it names.",
+  "file": "src/rng.ts",
+  "find": "{ line: 69, text: 'const j = value % range;'",
+  "replace": "{ line: 68, text: 'const j = value % range;'"
+ },
+ {
+  "name": "M06 the client seed dropped from the HMAC message",
+  "step": 6,
+  "expect": "[FAIL] Step 6",
+  "guard": "BEEF-06: a wrong client seed must change the permutation.",
+  "file": "src/rng.ts",
+  "find": "const message = `${clientSeed}:${nonce}:${cursor}`;",
+  "replace": "const message = `x:${nonce}:${cursor}`;",
+  "runner": "verify"
+ },
+ {
+  "name": "M07 a win credited one cent more",
+  "step": 7,
+  "expect": "[FAIL] Step 7",
+  "guard": "BEEF-11: every win credits amount x paid multiplier.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "{ const b = ds.bets.find((x: any) => x.response.outcome === 'win')!; b.response.amount_won = String(parseFloat(b.response.amount_won) + 0.01); } // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M07b a loss credited",
+  "step": 7,
+  "expect": "[FAIL] Step 7",
+  "guard": "BEEF-11: every loss credits exactly 0.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "{ const b = ds.bets.find((x: any) => x.response.outcome === 'loss')!; b.response.amount_won = '0.01'; } // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M08 a served multiplier moved 1e-9 relative",
+  "step": 8,
+  "expect": "[FAIL] Step 8",
+  "guard": "BEEF-13: exact rational at 1e-12 relative.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "{ const b = ds.bets.find((x: any) => x.response.outcome === 'win' && x.response.multiplier === '1.052631578947368421')!; b.response.multiplier = '1.052631580000000000'; } // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M09 a Phase E loss path re-ordered",
+  "step": 9,
+  "expect": "[FAIL] Step 9",
+  "guard": "BEEF-10: stepped tiles are the path prefix 0..k-1.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "if (phaseE) { const b = phaseE.bets.find((x: any) => x.response.outcome === 'loss' && x.response.current_step.length >= 2)!; b.response.current_step = [1, 0, ...b.response.current_step.slice(2)]; } // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M10 a Phase C bet not at the elevated stake",
+  "step": 10,
+  "expect": "[FAIL] Step 10",
+  "guard": "BEEF-12: every Phase C bet is at $10.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "{ const b = ds.bets.find((x: any) => x.phase === 'C')!; b.request.amount = '9'; } // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M11 a planned payout cell the capture never reached",
+  "step": 11,
+  "expect": "[FAIL] Step 11",
+  "guard": "BEEF-15: every planned (difficulty, k) cell must be observed.",
+  "file": "src/loader.ts",
+  "find": "    E4: { difficulty: 4, targetK: 2 },",
+  "replace": "    E4: { difficulty: 4, targetK: 3 },",
+  "runner": "verify"
+ },
+ {
+  "name": "M12 an effective_edge field off 0.8",
+  "step": 12,
+  "expect": "[FAIL] Step 12",
+  "guard": "BEEF-19: the served effective_edge must be 0.8.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "ds.bets[0].response.effective_edge = 0.9; // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M13 a bet deleted",
+  "step": 13,
+  "expect": "[FAIL] Step 13",
+  "guard": "BEEF-05: the population is bound to code constants.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "ds.bets.pop(); // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M14 the primary dataset edited without re-pin",
+  "step": 14,
+  "expect": "DATASET NOT THE ONE AUDITED",
+  "guard": "BEEF-26: the dataset hash is pinned.",
+  "file": "data/beef-master-6000bets.json",
+  "find": "\"schema\": \"duel-beef-capture\"",
+  "replace": "\"schema\":  \"duel-beef-capture\"",
+  "runner": "verify"
+ },
+ {
+  "name": "M15 the declared short epochs changed",
+  "step": 15,
+  "expect": "[FAIL] Step 15",
+  "guard": "BEEF-05: epoch sizes are bound to src/loader.ts.",
+  "file": "src/loader.ts",
+  "find": "Object.freeze([1, 49]);",
+  "replace": "Object.freeze([2, 48]);",
+  "runner": "verify"
+ },
+ {
+  "name": "M16 the exact binomial off by one (a wrong comb() that cancels out of the RTP table)",
+  "step": 16,
+  "expect": "[FAIL] Step 16",
+  "guard": "BEEF-18: counted survival (all 2^20 death-point sets, no binomial in the path) × the exact paid multiplier must equal the RTP table's exact row at every cell. A binomialBig off by one cancels out of the table (its row stays 992/1000) but not against the counted survivals. Re-aimed 14 Oct 2026 (C3): the identity used to be held to the claimed 992/1000, so the old mutation (EDGE_NUM 992 → 991) now moves the RTP table instead (with the committed table stale, a reproduction failure, exit 1; with it regenerated, RTP FIGURE OVERSTATED, exit 5 — MC3a).",
+  "file": "src/exact.ts",
+  "find": "  for (let i = 0; i < k; i++) r = (r * BigInt(n - i)) / BigInt(i + 1);",
+  "replace": "  for (let i = 0; i < k; i++) r = (r * BigInt(n - i + 1)) / BigInt(i + 1); // MUTATION: comb() off by one",
+  "runner": "verify"
+ },
+ {
+  "name": "M17 a Phase D bet's client seed swapped",
+  "step": 17,
+  "expect": "[FAIL] Step 17",
+  "guard": "BEEF-06: every Phase D bet recomputes.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "{ const d = ds.bets.filter((x: any) => x.phase === 'D'); d[0].seed.clientSeed = d[100].seed.clientSeed; } // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M18 a Pass 1 p-value forged and re-pinned",
+  "step": 18,
+  "expect": "[FAIL] Step 18",
+  "guard": "BEEF-20: chi-squared failures at Bonferroni fail Pass 1.",
+  "file": "outputs/simulation-results.json",
+  "find": "\"positionPValue\": 0.5260373608491224",
+  "replace": "\"positionPValue\": 1e-9",
+  "repin": [
+   {
+    "file": "src/artifact-pins.ts",
+    "find": "d49f95a23cbd3d6839761fdefc19c3ffa4103a42bd2b892eb7511a54ea5af358",
+    "hashOf": "outputs/simulation-results.json"
+   }
+  ],
+  "runner": "verify"
+ },
+ {
+  "name": "M19 a Pass 2 early p forged and re-pinned",
+  "step": 19,
+  "expect": "[FAIL] Step 19",
+  "guard": "BEEF-21: every early-window p recomputes from its win counts.",
+  "file": "outputs/simulation-results.json",
+  "find": "\"earlyP\": 0.5524529048817779",
+  "replace": "\"earlyP\": 0.5",
+  "repin": [
+   {
+    "file": "src/artifact-pins.ts",
+    "find": "d49f95a23cbd3d6839761fdefc19c3ffa4103a42bd2b892eb7511a54ea5af358",
+    "hashOf": "outputs/simulation-results.json"
+   }
+  ],
+  "runner": "verify"
+ },
+ {
+  "name": "M19b the Step 19 replay scores the rotating tile nonce % 20",
+  "step": 19,
+  "expect": "early windows disagree with a replay from the revealed seed",
+  "guard": "BEEF-21: the early-window replay scores tile 0, Beef's first tile, as Pass 2 does; the rotating tile nonce % 20 (the rule used until 2026-10-06, Mike's review) must not reproduce the committed rows.",
+  "file": "tests/steps/simulation.ts",
+  "find": ".includes(SIM_FIRST_STEP_TILE)) early++;",
+  "replace": ".includes(n % 20)) early++; // MUTATION",
+  "runner": "verify"
+ },
+ {
+  "name": "M19c a captured round whose first stepped tile is not tile 0",
+  "step": 19,
+  "expect": "whose first stepped tile is not tile 0",
+  "guard": "BEEF-21: the tile Pass 2 scores must be the first stepped tile of every captured round, so the simulated win rule is bound to the game and not only to the artifact. (Step 9 also fails on it; the marker proves Step 19 fired on its own.)",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "ds.bets[0].response.current_step = [1]; // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M19d the both-window result scored per seed (any one seed off in both windows flags)",
+  "step": 19,
+  "expect": "[FLAG] Step 19",
+  "guard": "BEEF-21: the both-window result is scored as a count against the number of seeds, P(K >= k | Binomial(121, 0.05 × 0.05)); a per-seed rule flags a fair game about 26% of the time at 121 seeds and must not reproduce the committed PASS.",
+  "file": "tests/steps/simulation.ts",
+  "find": ": flags >= testBFlagK || broad >= bothFlagK ? 'FLAG'",
+  "replace": ": flags >= testBFlagK || broad > 0 ? 'FLAG' // MUTATION",
+  "runner": "verify"
+ },
+ {
+  "name": "M19e the both-window FLAG level loosened past the 5% false-alarm cap",
+  "step": 19,
+  "expect": "exceeds the cap",
+  "guard": "BEEF-21: a statistical rule may move the verdict only if its false-alarm rate on a fair game is at most 5% for a FLAG and 1% for a FAIL (Mike's review, 6 Oct 2026); a rule loosened past its cap must be refused, not scored.",
+  "file": "tests/steps/simulation.ts",
+  "find": "bothFlagK  = kAt(P_BOTH, FLAG_AT)",
+  "replace": "bothFlagK  = kAt(P_BOTH, 0.30) /* MUTATION */",
+  "runner": "verify"
+ },
+ {
+  "name": "M20 a Phase E rung multiplier nudged",
+  "step": 20,
+  "expect": "[FAIL] Step 20",
+  "guard": "BEEF-13/17: every rung equals the formula.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "if (phaseE) { const sr = phaseE.bets[5].step_results![1]; sr.multiplier = '1.111111112'; } // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M21 a Phase E death-point set altered",
+  "step": 21,
+  "expect": "[FAIL] Step 21",
+  "guard": "BEEF-07: Phase E rounds recompute.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "if (phaseE) phaseE.bets[7].response.mines_positions = phaseE.bets[7].response.mines_positions.map((p: number) => (p + 1) % 20); // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M22 a Phase E cash-out credited one cent more",
+  "step": 22,
+  "expect": "[FAIL] Step 22",
+  "guard": "BEEF-11/17: every cash-out pays stake x rung multiplier.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "if (phaseE) { const b = phaseE.bets.find((x: any) => x.response.outcome === 'win')!; b.response.amount_won = String(parseFloat(b.response.amount_won) + 0.01); } // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M23 a pinned artifact edited without re-pin",
+  "step": 23,
+  "expect": "[FAIL] Step 23",
+  "guard": "BEEF-27: every artifact of record is pinned.",
+  "file": "outputs/determinism-log.json",
+  "find": "\"mismatches\": 0",
+  "replace": "\"mismatches\": 1",
+  "runner": "verify"
+ },
+ {
+  "name": "M23b impossible value written AND re-pinned",
+  "step": 23,
+  "expect": "VALUE DOMAINS (BEEF-27)",
+  "guard": "BEEF-27: Step 23 checks every numeric leaf against src/domains.ts — a recomputation count above the 6,000 audited bets is impossible and must fail even though the artifact is re-pinned.",
+  "file": "outputs/determinism-log.json",
+  "find": "\"verified\": 6000,",
+  "replace": "\"verified\": 7000,",
+  "repin": [
+   {
+    "file": "src/artifact-pins.ts",
+    "find": "88bc153e2d6e867f375c0cf8138491185761cdb3150e4c921a0746ecf5a7b3c2",
+    "hashOf": "outputs/determinism-log.json"
+   }
+  ],
+  "runner": "verify"
+ },
+ {
+  "name": "M24 a served difficulty-2 multiplier below the difficulty-1 cell",
+  "step": 24,
+  "expect": "MONOTONICITY/BOUNDS",
+  "guard": "BEEF-14: served multipliers must increase strictly with difficulty and depth; the violation is disclosed as a FLAG (R2). (Step 8 also fails on it; the marker proves Step 24 fired on its own.)",
+  "file": "tests/verify.ts",
+  "find": "const seedMap = buildSeedMap(allSeeds);",
+  "replace": "{ const b = ds.bets.find((x: any) => x.response.difficulty_level === 2 && x.response.outcome === 'win')!; b.response.multiplier = '1.0'; } // MUTATION\nconst seedMap = buildSeedMap(allSeeds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M25 every death point counted on tile t mod 10",
+  "step": 25,
+  "expect": "live-sample deviation",
+  "guard": "BEEF-22: Step 25 reacts to the sample — a position census folded onto 10 tiles must turn the step to INFO (informational: not counted, verdict unchanged; the run is rejected by the reproduction gate because the committed Step 25 record changes).",
+  "file": "tests/steps/live-fit.ts",
+  "find": "        counts[t]++;",
+  "replace": "        counts[t % 10]++; // MUTATION",
+  "runner": "verify"
+ },
+ {
+  "name": "MC3a one setting misses its stated figure: Expert (10 death points) cash-out after 10 steps paid 1 % less",
+  "step": 16,
+  "runner": "test",
+  "expect": "VERDICT: RTP FIGURE OVERSTATED",
+  "expectExit": 5,
+  "regen": [
+   "rtp-table",
+   "record"
+  ],
+  "guard": "FIXPASS2 class C3(i), 14 Oct 2026: a miss on ONE setting must end RTP FIGURE OVERSTATED, exit 5, never exit 1 or 2. The paid multiplier of one paytable cell no captured bet reached (difficulty 4, m = 10, a cash-out after k = 10 steps; the captured wins are k = 1, 2, 3 and 5) is lowered by 1 % in the game model (src/exact.ts exactMultiplier, which the settlement checks and the RTP table both read): that setting returns 98.208 %, 0.992 pp under the flat 99.2 % claim. Table and record regenerated in the copy. Runner test = mocha then verify, as npm test runs them: no unit test, Step 16 identity, simulation check or operator-FLAG branch may end the run first; Step 16 carries BEEF-19 and becomes the FLAG.",
+  "file": "src/exact.ts",
+  "find": "  const num = binomialBig(GRID, k) * (withEdge ? EDGE_NUM : 1n);\n  const den = binomialBig(GRID - m, k) * (withEdge ? EDGE_DEN : 1n);",
+  "replace": "  const num = binomialBig(GRID, k) * (withEdge ? EDGE_NUM : 1n) * (withEdge && m === 10 && k === 10 ? 99n : 100n); // MUTATION: one cell paid 1 % less\n  const den = binomialBig(GRID - m, k) * (withEdge ? EDGE_DEN : 1n) * 100n;"
+ },
+ {
+  "name": "MC3as the same change as MC3a, RTP table NOT regenerated: a stale table is a reproduction failure",
+  "step": 16,
+  "runner": "verify",
+  "expect": "DIFFERS from this run",
+  "expectExit": 1,
+  "guard": "Ruling 14 Oct 2026 (FIXPASS2): a committed RTP table that does not equal the run or its pin is a reproduction failure, exit 1, miss or no miss. MC3a without regenerating the table must end exit 1 with the table reported as differing, never exit 5: the miss is only reported on a consistent package.",
+  "file": "src/exact.ts",
+  "find": "  const num = binomialBig(GRID, k) * (withEdge ? EDGE_NUM : 1n);\n  const den = binomialBig(GRID - m, k) * (withEdge ? EDGE_DEN : 1n);",
+  "replace": "  const num = binomialBig(GRID, k) * (withEdge ? EDGE_NUM : 1n) * (withEdge && m === 10 && k === 10 ? 99n : 100n); // MUTATION: one cell paid 1 % less\n  const den = binomialBig(GRID - m, k) * (withEdge ? EDGE_DEN : 1n) * 100n;"
+ },
+ {
+  "name": "MC3b the stated figure raised in the claim source: 99.2 % -> 99.4 %",
+  "step": 16,
+  "runner": "test",
+  "expect": "VERDICT: RTP FIGURE OVERSTATED",
+  "expectExit": 5,
+  "regen": [
+   "rtp-table",
+   "record"
+  ],
+  "guard": "FIXPASS2 class C3(ii), 14 Oct 2026: the published figure raised where the claim is stated (src/rtp-settings.ts RTP_CLAIM, effective_edge 0.8 → 99.2 %) to 99.4 %, 0.2 pp above every setting's real 99.2 %: all 61 settings miss by more than the band, so the run must end RTP FIGURE OVERSTATED, exit 5. Table and record regenerated in the copy; no other check reads the claim.",
+  "file": "src/rtp-settings.ts",
+  "find": "  kind: 'flat',\n  rtp: '0.992',",
+  "replace": "  kind: 'flat',\n  rtp: '0.994', // MUTATION: stated figure raised"
+ },
+ {
+  "name": "MC3bs the same change as MC3b, RTP table NOT regenerated: a stale table is a reproduction failure",
+  "step": 16,
+  "runner": "verify",
+  "expect": "DIFFERS from this run",
+  "expectExit": 1,
+  "guard": "Ruling 14 Oct 2026 (FIXPASS2): a committed RTP table that does not equal the run or its pin is a reproduction failure, exit 1, miss or no miss. MC3b without regenerating the table must end exit 1 with the table reported as differing, never exit 5: the miss is only reported on a consistent package.",
+  "file": "src/rtp-settings.ts",
+  "find": "  kind: 'flat',\n  rtp: '0.992',",
+  "replace": "  kind: 'flat',\n  rtp: '0.994', // MUTATION: stated figure raised"
+ }
+]

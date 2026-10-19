@@ -1,12 +1,16 @@
 /**
  * Live-bet statistical context (informational, not scored).
  * At n<1000/config these tests lack power — authoritative results come from simulation.
+ *
+ * Removed 2026-10-06 (Mike's review, 6 Oct): the lag-1 autocorrelation and Wald-Wolfowitz runs test
+ * on the capture's difficulty_level sequence. They measured the order in which the capture chose
+ * difficulties, not the game's randomness, and MANIFEST.md had already dropped them on 2026-10-05.
  */
 
 import type { InfoItem } from './context';
 import { VerifyContext } from './context';
 import { survivalProbability, DEATH_POINTS_BY_DIFFICULTY, HOUSE_EDGE } from '../../src/rng';
-import { chiSquaredTest, lag1Autocorrelation, runsTest } from '../../src/stats';
+import { chiSquaredTest } from '../../src/stats';
 
 export function run(ctx: VerifyContext): InfoItem[] {
   const { bets, chiResultsLog } = ctx;
@@ -56,30 +60,5 @@ export function run(ctx: VerifyContext): InfoItem[] {
     detail: `${tested} difficulty groups tested; fails at α=0.01: ${fails}/${tested}; min p=${minP.toFixed(4)}; Bonferroni α/${tested}=${bonferroni.toFixed(6)}`,
   };
 
-  // ── Serial independence — lag-1 autocorrelation ───────────────────────────
-  // Use difficulty_level as continuous series (binary win/loss is degenerate for median-based tests)
-  const diffSeries = bets.map(b => b.response.difficulty_level);
-  const r1         = lag1Autocorrelation(diffSeries);
-  const n          = diffSeries.length;
-  const zScore     = r1 / (1 / Math.sqrt(n));
-
-  const absZ = Math.abs(zScore);
-  const lag1Verdict = absZ > 3
-    ? `(|z|>3 — structured phase ordering; see simulation for definitive test)`
-    : `(|z|<3 — no serial correlation detected)`;
-
-  const lag1Info: InfoItem = {
-    label: 'Serial Independence (lag-1 autocorrelation on difficulty_level sequence)',
-    detail: `r₁=${r1.toFixed(6)}, z=${zScore.toFixed(3)} ${lag1Verdict}. Underpowered at live sample size — see simulation for definitive test.`,
-  };
-
-  // ── Wald-Wolfowitz runs test ──────────────────────────────────────────────
-  const { runs, expected, z: zRuns, pValue: pRuns } = runsTest(diffSeries);
-
-  const runsInfo: InfoItem = {
-    label: 'Serial Independence (Wald-Wolfowitz runs test on difficulty_level sequence)',
-    detail: `runs=${runs}, expected=${expected.toFixed(1)}, z=${zRuns.toFixed(3)}, p=${pRuns.toFixed(4)}. Underpowered at live sample size — see simulation for definitive test.`,
-  };
-
-  return [rtpInfo, chi2Info, lag1Info, runsInfo];
+  return [rtpInfo, chi2Info];
 }

@@ -11,6 +11,7 @@ import {
   HOUSE_EDGE,
 } from '../../src/rng';
 import { loadDataset, buildSeedMap } from '../../src/loader';
+import { moneyTol, MONEY_REL_TOL } from '../steps/context';
 
 // ── Known-answer test vectors: real bets from data/beef-master-6000bets.json ──
 // First 7 bets of the first revealed epoch, covering all 4 difficulties.
@@ -257,7 +258,7 @@ describe('Full Dataset Verification — every bet and every revealed seed', () =
 // ── Payout accuracy on live data ─────────────────────────────────────────────
 
 describe('Payout Accuracy — every winning bet in the dataset', () => {
-  it('win_amount = bet_amount × payout_multiplier for all wins (tolerance 1e-10)', () => {
+  it(`win_amount = bet_amount × payout_multiplier for all wins (relative tolerance ${MONEY_REL_TOL.toExponential(0)})`, () => {
     let checked = 0;
     for (const b of ds.bets) {
       if (b.response.outcome === 'loss') continue;
@@ -265,7 +266,7 @@ describe('Payout Accuracy — every winning bet in the dataset', () => {
       const expected = parseFloat(b.response.amount_currency) * parseFloat(b.response.no_house_edge_multiplier);
       const actual   = parseFloat(b.response.amount_won);
       assert.ok(
-        Math.abs(expected - actual) < 1e-10,
+        Number.isFinite(actual) && Math.abs(expected - actual) <= moneyTol(expected),
         `round ${b.response.round_id}: expected ${expected}, got ${actual}`,
       );
       checked++;
@@ -281,5 +282,57 @@ describe('Payout Accuracy — every winning bet in the dataset', () => {
       losses++;
     }
     assert.ok(losses > 0);
+  });
+});
+
+// ── The operator's own Verify-tab code (profile BEEF-09) ──────────────────────
+describe('Operator source — Duel\'s own Beef Verify-tab code, executed with only its inputs filled in (pasted 2026-09-26)', function () {
+  this.timeout(300_000);
+  // duel.com → Provably Fair → Verify (Beef) code panel, pasted by Paulo 2026-09-26, saved verbatim (src/operator-verifier.ts)
+  const { runOperatorVerifier, checkOperatorCites, operatorPrintedLine, OPERATOR_VERIFIER_PINS, OPERATOR_VERIFIER_FILE, OPERATOR_EXPECTED_LOGS } =
+    require('../../src/operator-verifier') as typeof import('../../src/operator-verifier');
+  const { loadPhaseE } = require('../../src/loader') as typeof import('../../src/loader');
+  const ds = loadDataset();
+  const pe = loadPhaseE()!;
+  const seedMap = buildSeedMap([...ds.seeds, ...pe.seeds]);
+  const all = [...ds.bets, ...pe.bets];
+  const known = VECTORS.map((v, i) => ({ id: `known${i}`, inputs: { clientSeed: CLIENT_SEED, serverSeed: SERVER_SEED, nonce: v.nonce, deathPointsCount: v.deathPointsCount, gridSize: GRID_SIZE } }));
+  const captured = all.map((b, i) => ({ id: `r${i}`, inputs: { clientSeed: b.seed.clientSeed, serverSeed: seedMap.get(b.seed.serverSeedHashed) ?? '',
+    nonce: b.seed.nonce, deathPointsCount: DEATH_POINTS_BY_DIFFICULTY[b.response.difficulty_level], gridSize: GRID_SIZE } }));
+  const run = runOperatorVerifier([...known, ...captured]);
+
+  it('the vendored operator file and its runner hash to their pins, the code ran, and as shipped it printed only its empty-input message', () => {
+    assert.deepStrictEqual(run.files.map(f => f.match), [true, true]);
+    assert.strictEqual(run.files[0].file, OPERATOR_VERIFIER_FILE);
+    assert.strictEqual(run.files[0].actual, OPERATOR_VERIFIER_PINS[OPERATOR_VERIFIER_FILE]);
+    assert.strictEqual(run.error, null);
+    assert.deepStrictEqual(run.shippedLogs, [...OPERATOR_EXPECTED_LOGS]);
+  });
+
+  it('every operator line src/rng.ts cites carries the quoted text verbatim', () => {
+    const c = checkOperatorCites();
+    assert.deepStrictEqual(c.bad, []);
+    assert.ok(c.checked > 0);
+  });
+
+  it('fixed vectors: the operator code returns the 7 known death-point sets and prints its own line for each', () => {
+    VECTORS.forEach((v, i) => {
+      const o = run.results!.get(`known${i}`)!;
+      assert.deepStrictEqual(o.value, v.expectedPositions, `nonce=${v.nonce}`);
+      assert.deepStrictEqual(o.logs, [operatorPrintedLine([...v.expectedPositions], GRID_SIZE, v.deathPointsCount)]);
+    });
+  });
+
+  it('every captured round of both datasets: the operator death points equal the served ones and src/rng.ts (6,450/6,450)', () => {
+    let agree = 0;
+    all.forEach((b, i) => {
+      const o = run.results!.get(`r${i}`)!;
+      const got = (o.value ?? []).join(',');
+      const inp = captured[i].inputs;
+      if (got === [...b.response.mines_positions].sort((x, y) => x - y).join(',')
+        && got === computeDeathPoints(inp.serverSeed, inp.clientSeed, inp.nonce, inp.deathPointsCount).join(',')) agree++;
+    });
+    assert.strictEqual(all.length, 6450);
+    assert.strictEqual(agree, 6450);
   });
 });
