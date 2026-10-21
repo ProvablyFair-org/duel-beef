@@ -110,10 +110,10 @@
   "name": "M05d acceptance window no longer a whole number of ranges",
   "step": 5,
   "expect": "accepted window is NOT a whole number of ranges",
-  "guard": "BEEF-08: the draw-bias bound is measured from drawFromChunk.",
+  "guard": "BEEF-08: the draw-bias bound (src/bias.ts) is measured from src/rng.ts drawFromChunk. Retargeted 20 Oct 2026 to the clean-room src/rng.ts: the window becomes 2^32 - 1 values, not a whole number of ranges for most ranges.",
   "file": "src/rng.ts",
-  "find": "  return MAX_UINT32 - (MAX_UINT32 % range);",
-  "replace": "  return MAX_UINT32;",
+  "find": "  return Math.floor(TWO_POW_32 / range) * range;",
+  "replace": "  return TWO_POW_32 - 1; // MUTATION: acceptance window no longer a whole number of ranges",
   "runner": "verify"
  },
  {
@@ -121,7 +121,7 @@
   "step": 5,
   "runner": "verify",
   "expect": "OPERATOR VERIFY-TAB CODE PARITY (BEEF-09)",
-  "guard": "BEEF-09: forged evidence — Duel's vendored Beef Verify-tab code is changed on an uncited line AND its SHA-256 pin re-computed, so the hash check accepts it; executing it on every round must expose it.",
+  "guard": "BEEF-09: forged evidence — Duel's vendored Beef Verify-tab code is changed on one line AND its SHA-256 pin re-computed, so the hash check accepts it; executing it on every round must expose it.",
   "edits": [
    {
     "file": "evidence/verify-tab/duel-verify-tab-beef-2026-09-26.js",
@@ -179,23 +179,13 @@
   ]
  },
  {
-  "name": "M05i src/rng.ts cites an operator line that does not carry the quoted text",
-  "step": 5,
-  "runner": "verify",
-  "expect": "src/rng.ts operator citations",
-  "guard": "BEEF-09: every citation in src/rng.ts OPERATOR_SOURCE_CITES must quote the pinned operator file at the line it names.",
-  "file": "src/rng.ts",
-  "find": "{ line: 69, text: 'const j = value % range;'",
-  "replace": "{ line: 68, text: 'const j = value % range;'"
- },
- {
   "name": "M06 the client seed dropped from the HMAC message",
   "step": 6,
   "expect": "[FAIL] Step 6",
-  "guard": "BEEF-06: a wrong client seed must change the permutation.",
+  "guard": "BEEF-06: a wrong client seed must change the permutation. Retargeted 20 Oct 2026 to the clean-room src/rng.ts message line.",
   "file": "src/rng.ts",
-  "find": "const message = `${clientSeed}:${nonce}:${cursor}`;",
-  "replace": "const message = `x:${nonce}:${cursor}`;",
+  "find": "  const message = Buffer.from(`${clientSeed}:${nonce.toString(10)}:${t.toString(10)}`, \"utf8\");",
+  "replace": "  const message = Buffer.from(`x:${nonce.toString(10)}:${t.toString(10)}`, \"utf8\"); // MUTATION: client seed dropped",
   "runner": "verify"
  },
  {
@@ -329,7 +319,7 @@
   "repin": [
    {
     "file": "src/artifact-pins.ts",
-    "find": "d49f95a23cbd3d6839761fdefc19c3ffa4103a42bd2b892eb7511a54ea5af358",
+    "find": "7119a3e3743fbd288bf81477ce52ec289b67ea80b4be4fc70663b1a78dd5f613",
     "hashOf": "outputs/simulation-results.json"
    }
   ],
@@ -346,7 +336,7 @@
   "repin": [
    {
     "file": "src/artifact-pins.ts",
-    "find": "d49f95a23cbd3d6839761fdefc19c3ffa4103a42bd2b892eb7511a54ea5af358",
+    "find": "7119a3e3743fbd288bf81477ce52ec289b67ea80b4be4fc70663b1a78dd5f613",
     "hashOf": "outputs/simulation-results.json"
    }
   ],

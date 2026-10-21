@@ -47,10 +47,16 @@
  * back byte-identical (2633e8f8…).
  *
  * simulation-results.json RE-PINNED 2026-10-19 (previous pin 2ddcc202…): the Pass 1 description said it
- * "Validates independent implementation"; src/rng.ts is checked against Duel's Verify-tab code, not an
+ * "Validates independent implementation"; src/rng.ts was then checked against Duel's Verify-tab code, not an
  * independent implementation (Mike's QA, 19 Oct 2026, decision 1). Regenerated with `PF_EMIT=1 npm run
  * simulate`; only that description line moved (git diff: 1 line), rtp-convergence.html came back
  * byte-identical (2633e8f8…).
+ *
+ * simulation-results.json RE-PINNED 2026-10-20 (previous pin d49f95a2…): src/rng.ts was replaced by the
+ * clean-room rebuild of docs/ALGORITHM.md, and the Pass 1 description now says so instead of "checked
+ * against Duel's Verify-tab code". Regenerated with `PF_EMIT=1 npm run simulate` on the rebuilt module;
+ * only that description line moved (git diff: 1 line), so all 4,000,000 Pass 1 rounds and the Pass 2
+ * replay came back identical, and rtp-convergence.html came back byte-identical (2633e8f8…).
  */
 export const ARTIFACT_PINS: Readonly<Record<string, string>> = Object.freeze({
   'chi-squared-results.json':
@@ -60,5 +66,5 @@ export const ARTIFACT_PINS: Readonly<Record<string, string>> = Object.freeze({
   'rtp-convergence.html':
     '2633e8f87d9ed124b1c32c604c25291108ee5af775f8e2405e0ef3538e97d066',
   'simulation-results.json':
-    'd49f95a23cbd3d6839761fdefc19c3ffa4103a42bd2b892eb7511a54ea5af358',
+    '7119a3e3743fbd288bf81477ce52ec289b67ea80b4be4fc70663b1a78dd5f613',
 });

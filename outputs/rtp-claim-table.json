@@ -9,7 +9,7 @@
   "claim": {
     "kind": "flat",
     "rtp": "0.992",
-    "source": "game settings: effective_edge = 0.8 (%), the edge Duel's site is served with every Beef bet (6,000 of 6,000, Step 12); the Beef config the site loads (GET /api/v2/cross-road/config, E07, fetched 2026-10-05) carries the payout tables built on 0.992 (src/rng.ts:58; MANIFEST.md#payouts-and-rtp; declaration gameModel.edge.claimed 0.008)"
+    "source": "game settings: effective_edge = 0.8 (%), the edge Duel's site is served with every Beef bet (6,000 of 6,000, Step 12); the Beef config the site loads (GET /api/v2/cross-road/config, E07, fetched 2026-10-05) carries the payout tables built on 0.992 (docs/ALGORITHM.md §3.1; scripts/check-config-table.mjs, 61 of 61 cells; MANIFEST.md#payouts-and-rtp; declaration gameModel.edge.claimed 0.008)"
   },
   "settings": 61,
   "trueMin": {

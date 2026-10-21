@@ -1,6 +1,6 @@
 {
   "pass1_fresh_seeds": {
-    "description": "Auditor-generated random seeds. Exercises the package RNG (src/rng.ts, checked against Duel's Verify-tab code), death-point position uniformity, and serial independence.",
+    "description": "Auditor-generated random seeds. Exercises the package RNG (src/rng.ts, rebuilt from the written spec docs/ALGORITHM.md by an implementer who never opened Duel's code; Duel's Verify-tab code is run as a second check, not used as the source), death-point position uniformity, and serial independence.",
     "configs": 4,
     "roundsPerConfig": 1000000,
     "totalRounds": 4000000,

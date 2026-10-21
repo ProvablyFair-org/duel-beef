@@ -404,7 +404,7 @@ const output = {
   // Nor `executionTimeMs` (removed 2026-09-26, profile BEEF-27): wall-clock time is run metadata;
   // the elapsed times are printed to the console only.
   pass1_fresh_seeds: {
-    description: 'Auditor-generated random seeds. Exercises the package RNG (src/rng.ts, checked against Duel\'s Verify-tab code), death-point position uniformity, and serial independence.',
+    description: 'Auditor-generated random seeds. Exercises the package RNG (src/rng.ts, rebuilt from the written spec docs/ALGORITHM.md by an implementer who never opened Duel\'s code; Duel\'s Verify-tab code is run as a second check, not used as the source), death-point position uniformity, and serial independence.',
     configs:                 DIFFICULTIES.length,
     roundsPerConfig:         ROUNDS_PER_CONFIG,
     totalRounds:             DIFFICULTIES.length * ROUNDS_PER_CONFIG,

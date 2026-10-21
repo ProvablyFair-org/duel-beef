@@ -91,10 +91,12 @@ export const STEP_CLAIMS: Record<number, StepClaims> = {
       },
       {
         id: 'BEEF-08', coverage: 'full',
-        note: 'added 2026-09-26 (ported from Duel Mines Step 5): the bound is MEASURED from src/rng.ts drawFromChunk — the '
+        note: 'added 2026-09-26 (the same bound as Step 5 of the Duel Mines audit package; since 20 Oct 2026 in src/bias.ts, '
+          + 'built on the clean-room src/rng.ts): the bound is MEASURED from src/rng.ts drawFromChunk — the '
           + 'function the shuffle calls — on all 19 ranges 2..20 (binary search for the accepted window + ~600 predicate '
           + 'probes per range); FAIL unless every window is an exact whole number of ranges and the worst per-index bias is '
-          + 'inside 2^-32. Measured: exact on all 19 (range 20: 4,294,967,280 = 20 × 214,748,364), worst bias 0. The '
+          + 'inside 2^-32. Measured: exact on all 19 (range 20: 4,294,967,280 = 20 × 214,748,364; ranges 2, 4, 8, 16: the '
+          + 'whole 2^32 domain, no rejection), worst bias 0. The '
           + 'rejection census over the 6,000 recomputed rounds (114,000 draws) is printed with its expectation. FAIL probed '
           + '(maxFairFor changed to accept every value below 2^32 − 1)',
       },
@@ -143,7 +145,7 @@ export const STEP_CLAIMS: Record<number, StepClaims> = {
         + 'MULT_REL_TOL = 1e-12 relative, which replaced 1e-6 ABSOLUTE on 2026-09-26. No exact equality is available: '
         + 'the operator\'s k > 1 values carry double error (worst measured 9.63e-15, Steps 20/22), so 1e-12 leaves ~100× '
         + 'headroom; the worst deviation is emitted every run. The derivation reads (m, k) only; the formula\'s origin is '
-        + 'Duel\'s /cross-road/config payout table (src/rng.ts:30, :290-298). FAIL probed (one served multiplier moved '
+        + 'Duel\'s /cross-road/config payout table (docs/ALGORITHM.md §3.1; src/rng.ts:41, :239-254). FAIL probed (one served multiplier moved '
         + '1e-9 relative — the old 1e-6 bound passed it). Rungs k > 1: Step 20; Phase C: Step 10',
     }],
   },
@@ -361,20 +363,28 @@ export const NOT_APPLICABLE: Array<{ id: string; reason: string }> = [
 export const PACKAGE_CHECKS: Array<{ id: string; artifact: string; coverage: Coverage | 'none'; note: string }> = [
   {
     id: 'BEEF-09',
-    artifact: 'tests/beef/BeefTests.ts (Operator source block) + src/rng.ts OPERATOR_SOURCE_CITES + src/operator-verifier.ts + Step 5',
+    artifact: 'docs/ALGORITHM.md + tests/beef/RngSpecTests.ts + tests/beef/BeefTests.ts (Second check block) + src/operator-verifier.ts + Step 5',
     coverage: 'full',
-    note: 'CLOSED 2026-09-26 (was partial: Duel\'s Beef Verify-tab code was not in the workspace). Duel\'s own Beef Verify-tab code, '
+    note: 'REWRITTEN 2026-10-20 (v1.2.0). src/rng.ts is rebuilt from a written specification, docs/ALGORITHM.md (framework '
+      + 'games/beef/ALGORITHM.md), by an implementer who never opened Duel\'s code; Duel\'s published Verify-tab code is run as a '
+      + 'second check, not used as the source. Through v1.1.0 src/rng.ts followed that code step for step and cited 17 of its lines '
+      + '(OPERATOR_SOURCE_CITES); that code and the citation table are gone. CLOSED 2026-09-26 (was partial: Duel\'s Beef Verify-tab code was not in the workspace). Duel\'s own Beef Verify-tab code, '
       + 'pasted by Paulo from duel.com Verify tab 2026-09-26, is vendored verbatim at evidence/verify-tab/duel-verify-tab-beef-2026-09-26.js '
       + '(E06, SHA-256 43ba4dfb…, never edited) and pinned with its runner in src/operator-verifier.ts. The asserts, each met: (1) "unit '
-      + 'tests reproduce at least one captured bet … against the operator\'s published algorithm" — the Operator source block in '
+      + 'tests reproduce at least one captured bet … against the operator\'s published algorithm" — the Second check block in '
       + 'tests/beef/BeefTests.ts EXECUTES the pinned file with only its five "User input values" filled in (gridSize 20, deathPointsCount '
       + 'from the served difficulty) on all 6,450 captured rounds of both datasets: its death points equal the served ones and src/rng.ts '
       + 'on 6,450/6,450; (2) "fixed vectors" — the 7 known-answer bets through the same file, returned set and printed line both exact; '
-      + '(3) "the adapter cites the operator source line it ports" — src/rng.ts OPERATOR_SOURCE_CITES names 17 lines of the pinned file, '
-      + 'each checked verbatim (17/17). Step 5 runs the same execution in the verifier. The earlier unit tests stay (7 vectors × 4 '
-      + 'difficulties, hex-key control, tampered-seed control, full recompute). FAIL probed: M05e (a line of the file changed AND '
-      + 're-pinned), M05f (file byte, no re-pin), M05g (runner byte, no re-pin), M05h (runner forged AND re-pinned), M05i (a citation '
-      + 'moved). Not established: that the Verify button, or Duel\'s server, runs exactly this code',
+      + 'and tests/beef/RngSpecTests.ts runs the spec\'s own §5 vectors and properties against src/rng.ts (105/105); (3) "the adapter '
+      + 'cites the operator source line it ports" — superseded for this package by the 20 Oct 2026 rule that RNG code is rebuilt from a '
+      + 'written spec: nothing is ported, so no operator line is cited; docs/ALGORITHM.md §4 names the source of every step instead '
+      + '(Duel\'s public pages, the standard construction, Duel\'s public config, or the 6,450 live rounds). Step 5 runs the same '
+      + 'execution in the verifier. The earlier unit tests stay (7 vectors × 4 difficulties, hex-key control, tampered-seed control, '
+      + 'full recompute). Where the two can differ, no captured round reaches: at ranges 2, 4, 8 and 16 src/rng.ts accepts every 32-bit '
+      + 'chunk while Duel\'s code rejects the top `range` values, and when all 8 chunks of a draw are rejected src/rng.ts throws '
+      + '(spec open point O1) while Duel\'s code draws again on the next counter. FAIL probed: M05e (a line of the file changed AND '
+      + 're-pinned), M05f (file byte, no re-pin), M05g (runner byte, no re-pin), M05h (runner forged AND re-pinned); M05i (a citation '
+      + 'moved) was retired on 20 Oct 2026 with the citation table. Not established: that the Verify button, or Duel\'s server, runs exactly this code',
   },
   {
     id: 'BEEF-23', artifact: 'MANIFEST.md#adversarial-matrix', coverage: 'full',
@@ -414,7 +424,8 @@ export const PACKAGE_CHECKS: Array<{ id: string; artifact: string; coverage: Cov
       + 'site-verifier forgery re-pinned (M05c). Measured 2026-09-26 (re-run after Steps 24–25 and M23b/M24/M25 were added): 33/33 killed; re-run the same day after '
       + 'Duel\'s Verify-tab code was wired into Step 5 (M05e–M05i added: operator file forged AND re-pinned, file and runner edited '
       + 'without re-pin, runner forged AND re-pinned, a citation moved): 38/38 killed, 25/25 scored steps have a killing '
-      + 'mutation (the runner reads the scored steps from the baseline run). No declared survivors. The result of the '
+      + 'mutation (the runner reads the scored steps from the baseline run). On 20 Oct 2026 M05i (a citation moved) was retired with '
+      + 'the citation table, and M05d and M06 were retargeted to the clean-room src/rng.ts. No declared survivors. The result of the '
       + 'latest run is declared in RELEASE-MANIFEST.json (falsifiability)',
   },
   {

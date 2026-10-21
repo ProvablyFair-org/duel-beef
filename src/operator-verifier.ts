@@ -4,6 +4,12 @@
  * Duel.com's Provably Fair → Verify page, with Beef selected, shows a JavaScript code panel. That code
  * is the operator's published algorithm for Beef — Duel's own source for the death points.
  *
+ * ROLE (since 20 Oct 2026, v1.2.0). This file is a SECOND CHECK, not the source of src/rng.ts. src/rng.ts is
+ * rebuilt from the written specification docs/ALGORITHM.md by an implementer who never opened Duel's code;
+ * Duel's file is run here, byte for byte, to show that it agrees with that rebuild and with the served
+ * death points. Through v1.1.0 src/rng.ts followed this file step for step and, from 26 Sep 2026, cited 17
+ * of its lines; that code and its citation table were removed on 20 Oct 2026.
+ *
  * PROVENANCE. Pasted by Paulo from duel.com → Provably Fair → Verify (Beef) on 2026-09-26 and saved
  * verbatim as evidence/verify-tab/duel-verify-tab-beef-2026-09-26.js (committed in 9333460; 3,353
  * bytes, 101 lines). The file is never edited. Until then Beef's Verify-tab code was not in the
@@ -22,8 +28,6 @@
  *      retry (L46–L83) — returns the sorted death points, and the file prints the first one as
  *      "Death Point: <p> (Step <p+1>)", or "Death Point: null" when p >= gridSize − deathPointsCount.
  *      The runner's stdin and stdout are temp FILES, not pipes, and the run has a hard timeout.
- *   3. CHECKS THE CITATIONS: every line src/rng.ts cites (OPERATOR_SOURCE_CITES) must carry, at that
- *      line number of the pinned file, the text it quotes.
  */
 
 import * as crypto from 'crypto';
@@ -31,7 +35,6 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { spawnSync } from 'child_process';
-import { OPERATOR_SOURCE_CITES } from './rng';
 
 export const PACKAGE_ROOT = path.join(__dirname, '..');
 export const OPERATOR_VERIFIER_FILE = 'evidence/verify-tab/duel-verify-tab-beef-2026-09-26.js';
@@ -140,18 +143,4 @@ export function runOperatorVerifier(rounds: OperatorRound[], root = PACKAGE_ROOT
   } catch (e) {
     return { files, hashesMatch, results: null, shippedLogs: [], error: `operator verifier output unreadable: ${(e as Error).message}` };
   }
-}
-
-/** Every citation in src/rng.ts must quote, verbatim, the pinned operator file at the line it names. */
-export function checkOperatorCites(root = PACKAGE_ROOT): { checked: number; bad: string[] } {
-  const p = path.join(root, OPERATOR_VERIFIER_FILE);
-  if (!fs.existsSync(p)) return { checked: 0, bad: [`${OPERATOR_VERIFIER_FILE} not found`] };
-  const lines = fs.readFileSync(p, 'utf8').split('\n');
-  const bad: string[] = [];
-  for (const c of OPERATOR_SOURCE_CITES) {
-    const at = lines[c.line - 1];
-    if (at === undefined || !at.includes(c.text)) bad.push(`L${c.line} does not contain ${JSON.stringify(c.text)} (it reads ${JSON.stringify((at ?? '').trim())})`);
-  }
-  if (OPERATOR_SOURCE_CITES.length === 0) bad.push('src/rng.ts cites no operator line');
-  return { checked: OPERATOR_SOURCE_CITES.length, bad };
 }

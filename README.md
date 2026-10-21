@@ -1,6 +1,6 @@
 # Duel Beef — Provably Fair Audit
 
-**Auditor:** [ProvablyFair.org](https://www.provablyfair.org) · **Audit ID:** PF-2026-DL06 · **Release:** `v1.1.0` · **Capture:** 16–21 April 2026
+**Auditor:** [ProvablyFair.org](https://www.provablyfair.org) · **Audit ID:** PF-2026-DL06 · **Release:** `v1.2.0` · **Capture:** 16–21 April 2026
 
 **Result: PROVABLY FAIR — Full Pass.** Every death-point layout in the 6,450-bet dataset (6,000 primary + 450 Phase E multi-step) reproduces from (serverSeed, clientSeed, nonce). The verifier reports 24 passing steps of 25, one disclosed capture-origin flag and no hard failures. The flag is Step 4: two nonces the capture missed on retried requests, one per data file; their death points are reconstructed from the revealed seeds, but the rounds were not captured. It is verdict-neutral. Step 19, the seed-selection test, passes and discloses one observation: one of the 121 casino seeds (commitment `c9ddfba9…7121b568`, client seed `Ty1rZcxKscWFXxqt`) is off in both of its windows, 36 wins in its first 50 nonces (p = 0.010042) and 8,387 in the next 9,950 (p = 0.047777), against the 85% first-step win chance on tile 0, Beef's first tile. A fair game gives at least one such seed among 121 about one time in four, so the step tests the count of such seeds: 2 would be a FLAG, 3 a FAIL.
 
@@ -10,14 +10,14 @@
 
 | Check | Captured evidence |
 |---|---|
-| Death points | 6,000 / 6,000 primary and 450 / 450 Phase E layouts recomputed by `src/rng.ts`, 0 mismatches; `src/rng.ts` is checked against Duel's published Verify-tab code, not an independent implementation ([details](MANIFEST.md#operator-and-player-verifier-code)) |
+| Death points | 6,000 / 6,000 primary and 450 / 450 Phase E layouts recomputed by `src/rng.ts`, 0 mismatches. `src/rng.ts` was rebuilt from a written specification ([docs/ALGORITHM.md](docs/ALGORITHM.md)) by an implementer who never opened Duel's code; Duel's published Verify-tab code is run as a second check, not used as the source ([details](MANIFEST.md#operator-and-player-verifier-code)) |
 | Payouts | 6,000 payouts checked at relative tolerance 1e-12, 0 errors; 4,337 winning multipliers equal C(20,k)/C(20−m,k) × 0.992 |
 | Multi-step (Phase E) | 1,085 rung multipliers in 15 (difficulty, k) cells; 202 cash-outs at k>1 and 248 losses settle correctly |
 | Seed records | 121 bet-bearing seeds hash to their commitments; 124/124 primary and 13/13 Phase E forward links |
 | Stake and client seed | 200 $10 bets pay by the same formula; 800 Phase D bets on 16 client seeds recompute |
 | Theoretical RTP | 99.2000% on all 61 cells, exact identity checked by Step 16 |
 | Simulation evidence | 4,000,000 Pass 1 rounds (mean RTP 99.1468%); Pass 2 on 121 revealed casino seeds, one step on tile 0 per round: Test A 0/121, Test B 2/121 (binomial p = 0.985), 1 seed off in both windows at p < 0.05 (count p = 0.261; a flag needs 2), 0 at p < 0.001; each rule's false-alarm rate on a fair game is stated in the [overview](MANIFEST.md#step-19-rules-and-false-alarm-rates) |
-| Player verification | Duel's own Verify-tab code and a pinned copy of the ProvablyFair.org docs-site verifier both reproduce all 6,450 rounds |
+| Player verification | Duel's own Verify-tab code (the second check) and a pinned copy of the ProvablyFair.org docs-site verifier both reproduce all 6,450 rounds |
 
 Hash matching and the forward commitment chain establish consistency of the supplied records. Coverage gaps, capture seeds and residual operator trust are retained in the [overview's limitations](MANIFEST.md#limitations-and-trust).
 

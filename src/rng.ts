@@ -1,105 +1,89 @@
 /**
- * Duel.com Beef (cross-road) — RNG implementation.
+ * PROVENANCE (header added on integration, 20 Oct 2026; everything below this comment is the
+ * clean-room module byte for byte).
  *
- * Algorithm: backward Fisher-Yates shuffle with per-step rejection sampling,
- * the same pattern used by Duel Mines and Keno.
+ * This module was REBUILT FROM A WRITTEN SPECIFICATION, not ported from Duel's code:
+ *   spec      docs/ALGORITHM.md, a copy of games/beef/ALGORITHM.md in the ProvablyFair.org audit
+ *             framework (SHA-256 57daebfd…f7b6). Written from Duel's public pages, the standard
+ *             provably-fair construction, Duel's public Beef config and the 6,450 live rounds, without
+ *             opening Duel's code (its §8 lists every file read).
+ *   rebuild   written by an implementer who read ONLY that spec and a module-interface file, and
+ *             never opened Duel's code, its Verify-tab file, or this package's earlier src/rng.ts.
+ *   self-test tests/beef/RngSpecTests.ts (the spec's §5 vectors and properties).
  *
- *   positions = [0, 1, ..., 19]
- *   for i from 19 downto 1:
- *     cursor = 19 - i
- *     range  = i + 1
- *     maxFair = 0xFFFFFFFF - (0xFFFFFFFF % range)
- *     loop:
- *       hash = HMAC-SHA256(key = hex_bytes(serverSeed), message = clientSeed:nonce:cursor)
- *       scan 4-byte chunks of hash:
- *         if chunk < maxFair → j = chunk % range; swap positions[i] ↔ positions[j]; break
- *       else cursor++ and retry
- *   death_points = positions[0..deathPointsCount-1], sorted ascending
+ * Duel's published Verify-tab code (evidence/verify-tab/duel-verify-tab-beef-2026-09-26.js, E06) is
+ * NOT the source of this module. It is run byte for byte as a SECOND CHECK, by Step 5 and the unit
+ * tests (src/operator-verifier.ts), next to the ProvablyFair.org docs-site verifier.
  *
- * Key encoding: Buffer.from(serverSeed, 'hex') — hex-decoded bytes, NOT UTF-8.
- * Grid size: 20 (constant across all difficulties).
- * deathPointsCount varies by difficulty: EASY=1, MEDIUM=3, HARD=5, EXPERT=10.
+ * Three-way agreement measured on integration (20 Oct 2026, both datasets, 6,450 rounds): this module
+ * vs the live rounds, commitment 6,450/6,450 (131/131 commitments), death points 6,450/6,450, and the
+ * win/loss, path and phase-E reached_k derived from them 6,450/6,450 and 450/450; vs Duel's Verify-tab
+ * code 6,450/6,450 death points; vs the provablyfair.org live verifier: not measured, this package has
+ * no live-site runner for Beef (the docs-site derive.js agrees on 6,450/6,450).
  *
- * OPERATOR SOURCE (since 2026-09-26): Duel's own Beef Verify-tab code, pasted by Paulo from duel.com
- * Verify tab on 2026-09-26, evidence/verify-tab/duel-verify-tab-beef-2026-09-26.js (SHA-256
- * 43ba4dfb…564f6, pinned in src/operator-verifier.ts). "Lxx" is a line of that file. Every citation is
- * listed in OPERATOR_SOURCE_CITES and checked against the pinned bytes by Step 5 and the unit tests, and
- * Step 5 EXECUTES that file on every captured round.
+ * Where this module and Duel's Verify-tab code can differ (no captured round reaches either):
+ *   - ranges 2, 4, 8 and 16: this module accepts every 32-bit chunk (LIMIT = 2^32); Duel's code
+ *     rejects the top `range` values (maxFair = 0xFFFFFFFF − (0xFFFFFFFF mod range) = 2^32 − range)
+ *     and moves to the next chunk. Both windows are whole numbers of ranges.
+ *   - all 8 chunks of a draw rejected (spec open point O1, ≤ 4 × 10⁻⁶⁸ per draw): this module
+ *     throws; Duel's code increments the HMAC counter and draws again.
  */
-
-import * as crypto from 'crypto';
-
 /**
- * Each entry: a line of evidence/verify-tab/duel-verify-tab-beef-2026-09-26.js and text that line must
- * contain verbatim. src/operator-verifier.ts checkOperatorCites reads the pinned file and FAILs any entry
- * whose line does not carry its text.
+ * Beef (Duel API name: cross-road) outcome derivation, written from
+ * ALGORITHM.md and INTERFACE.md only. Section references (§) point at ALGORITHM.md.
  */
-export const OPERATOR_SOURCE_CITES: ReadonlyArray<{ line: number; text: string; ports: string }> = Object.freeze([
-  { line: 30, text: 'const keyBytes = hexToBytes(keyHex);', ports: 'HMAC key = hex-decoded server seed' },
-  { line: 36, text: "{ name: 'HMAC', hash: 'SHA-256' },", ports: 'HMAC-SHA256' },
-  { line: 47, text: 'if (deathPointsCount >= gridSize) throw new Error("deathPointsCount must be less than gridSize");', ports: 'computeDeathPointsFromBuffer guard' },
-  { line: 49, text: 'const MAX_UINT32 = 0xFFFFFFFF;', ports: 'MAX_UINT32' },
-  { line: 50, text: 'const positions = Array.from({ length: gridSize }, (_, i) => i);', ports: 'positions = [0 … gridSize−1]' },
-  { line: 53, text: 'for (let i = gridSize - 1; i > 0; i--) {', ports: 'backward Fisher-Yates' },
-  { line: 54, text: 'const range = i + 1;', ports: 'range' },
-  { line: 55, text: 'const maxFair = MAX_UINT32 - (MAX_UINT32 % range);', ports: 'maxFairFor' },
-  { line: 56, text: 'let cursor = gridSize - 1 - i;', ports: 'cursor = gridSize − 1 − i' },
-  { line: 62, text: 'new TextEncoder().encode(`${clientSeed}:${nonce}:${cursor}`)', ports: 'message = clientSeed:nonce:cursor' },
-  { line: 66, text: 'for (let off = 0; off + 8 <= hash.length; off += 8) {', ports: 'eight 4-byte chunks, first to last' },
-  { line: 67, text: 'const value = parseInt(hash.slice(off, off + 8), 16);', ports: 'chunk read as a big-endian uint32' },
-  { line: 68, text: 'if (value < maxFair) {', ports: 'drawFromChunk acceptance' },
-  { line: 69, text: 'const j = value % range;', ports: 'drawFromChunk index' },
-  { line: 70, text: '[positions[i], positions[j]] = [positions[j], positions[i]];', ports: 'swap' },
-  { line: 77, text: 'cursor++; // otherwise try a new cursor', ports: 'every chunk rejected → next cursor' },
-  { line: 82, text: 'return positions.slice(0, deathPointsCount).sort((a, b) => a - b);', ports: 'death points = first m, sorted' },
-]);
+import { createHash, createHmac } from "crypto";
 
-export const GRID_SIZE = 20;
-export const HOUSE_EDGE = 0.008;  // 0.8% — verified: 1/0.95 × 0.992 = 1.04421… matches API payout tables
-const MAX_UINT32 = 0xFFFFFFFF;
+/** §0: the road has 20 tiles, numbered 0..19 in walking order. */
+export const GRID_SIZE: number = 20;
 
-/** Death-point count per difficulty, by difficulty_level id (from /cross-road/config). */
+/** §3.1: reference edge, 0.8 %. */
+export const HOUSE_EDGE: number = 0.008;
+
+/** §0 table: difficulty id -> number of death points m. */
 export const DEATH_POINTS_BY_DIFFICULTY: Record<number, number> = {
-  1: 1,   // EASY   — 19 steps
-  2: 3,   // MEDIUM — 17 steps
-  3: 5,   // HARD   — 15 steps
-  4: 10,  // EXPERT — 10 steps (UI labels this "Extreme")
+  1: 1, // EASY
+  2: 3, // MEDIUM
+  3: 5, // HARD
+  4: 10, // EXPERT
 };
 
-/** Max steps before a round is auto-cashed out (i.e. full traversal). */
+const TWO_POW_32 = 0x1_0000_0000; // 2^32
+const CHUNKS_PER_DIGEST = 8; // §2 Step 2: chunk offsets 0, 4, ..., 28 of a 32-byte digest
+
+function assertInt(name: string, v: number, min: number, max: number): void {
+  if (!Number.isSafeInteger(v) || v < min || v > max) {
+    throw new RangeError(`${name} must be an integer in [${min}, ${max}], got ${String(v)}`);
+  }
+}
+
+/** §0: CONFIG `steps` = 20 - m, i.e. the safe tiles on the road. */
 export function maxSteps(deathPointsCount: number): number {
+  assertInt("deathPointsCount", deathPointsCount, 0, GRID_SIZE);
   return GRID_SIZE - deathPointsCount;
 }
 
-/**
- * Exclusive upper end of the accepted chunk window for one shuffle step on `range` tiles: a 32-bit
- * chunk v is accepted iff v < maxFairFor(range). By construction a whole number of ranges, which is
- * what makes the step exactly uniform — Step 5 (BEEF-08) re-derives that from drawFromChunk below
- * rather than trusting this sentence. (Ported 2026-09-26 from Duel Mines src/rng.ts, same algorithm.)
- */
+/** §2 Step 2: LIMIT(r) = floor(2^32 / r) * r; chunk values at or above it are rejected. */
 export function maxFairFor(range: number): number {
-  return MAX_UINT32 - (MAX_UINT32 % range);
+  assertInt("range", range, 1, TWO_POW_32);
+  return Math.floor(TWO_POW_32 / range) * range;
 }
 
 /**
- * THE SINGLE-CHUNK DRAW the shuffle uses — the one place the acceptance rule and the chunk-to-index
- * mapping live. Returns the swap index j in [0, range), or null when the chunk falls in the rejected
- * tail. drawBiasBound probes THIS function, so a change to the rule the shuffle runs is a change to
- * the bound Step 5 prints.
+ * §2 Step 2: one 32-bit chunk to an index in [0, range), or null when the chunk
+ * falls in the biased tail (v >= LIMIT(range)).
  */
 export function drawFromChunk(value: number, range: number): number | null {
-  return value < maxFairFor(range) ? value % range : null;
+  assertInt("value", value, 0, TWO_POW_32 - 1);
+  if (value >= maxFairFor(range)) return null;
+  return value % range;
 }
 
-/** Optional census filled by the shuffle: how often the rejection branch was actually taken. */
 export interface DrawCensus {
-  /** Shuffle steps executed (gridSize − 1 per round). */
   draws: number;
-  /** 4-byte chunks read, accepted or not. */
   chunksRead: number;
-  /** Chunks that fell in a rejected tail. */
   rejectedChunks: number;
-  /** Times all 8 chunks of one HMAC were rejected and the cursor advanced. */
+  /** Here: each move from one 4-byte chunk to the next chunk of the same digest (§2 Step 2 loop). */
   cursorAdvances: number;
 }
 
@@ -107,245 +91,164 @@ export function newDrawCensus(): DrawCensus {
   return { draws: 0, chunksRead: 0, rejectedChunks: 0, cursorAdvances: 0 };
 }
 
-export function computeDeathPointsFromBuffer(
+/**
+ * §2 Steps 1-2 for one draw t: a fresh HMAC per draw, then the first accepted
+ * big-endian u32 chunk of that digest, reduced mod range.
+ */
+function drawIndex(
   keyBuffer: Buffer,
   clientSeed: string,
   nonce: number,
-  deathPointsCount: number,
-  gridSize = GRID_SIZE,
-  census?: DrawCensus,
-): number[] {
-  if (deathPointsCount >= gridSize) {
-    throw new Error(`deathPointsCount (${deathPointsCount}) must be less than gridSize (${gridSize})`);
+  t: number,
+  range: number,
+  census: DrawCensus | undefined,
+): number {
+  // §2 Step 1: message is UTF-8 of "clientSeed:nonce:t", all numbers plain base 10.
+  const message = Buffer.from(`${clientSeed}:${nonce.toString(10)}:${t.toString(10)}`, "utf8");
+  const digest = createHmac("sha256", keyBuffer).update(message).digest();
+  for (let c = 0; c < CHUNKS_PER_DIGEST; c++) {
+    if (c > 0 && census) census.cursorAdvances++;
+    // §2 Step 2: bytes c*4 .. c*4+3 as an unsigned big-endian 32-bit integer.
+    const v = digest.readUInt32BE(c * 4);
+    if (census) census.chunksRead++;
+    const idx = drawFromChunk(v, range);
+    if (idx !== null) {
+      if (census) census.draws++;
+      return idx;
+    }
+    if (census) census.rejectedChunks++;
   }
-  return computePermutationFromBuffer(keyBuffer, clientSeed, nonce, gridSize, census)
-    .slice(0, deathPointsCount).sort((a, b) => a - b);
+  // §6 O1: the spec leaves "all 8 chunks rejected" unsettled; refuse to guess.
+  throw new Error(
+    `all ${CHUNKS_PER_DIGEST} chunks rejected for draw t=${t} (range ${range}); behaviour unspecified (ALGORITHM.md O1)`,
+  );
+}
+
+function validateCommon(keyBuffer: Buffer, clientSeed: string, nonce: number, gridSize: number): void {
+  if (!Buffer.isBuffer(keyBuffer)) throw new TypeError("keyBuffer must be a Buffer");
+  if (typeof clientSeed !== "string") throw new TypeError("clientSeed must be a string");
+  assertInt("nonce", nonce, 0, Number.MAX_SAFE_INTEGER);
+  assertInt("gridSize", gridSize, 1, TWO_POW_32);
 }
 
 /**
- * The FULL shuffled board, before the death-point projection. Every difficulty draws the same
- * 20-tile permutation and keeps its first m tiles, so the permutation is the complete output of
- * the RNG for one (serverSeed, clientSeed, nonce). Step 6 compares this, not the projection: a
- * 1-of-20 projection (EASY) repeats under a different client seed 5% of the time by chance
- * alone, so the projection cannot tell "the client seed is an input" from "it is not".
+ * §2 Step 3: backward Fisher-Yates over [0 .. gridSize-1]. Draw t (t = 0 .. gridSize-2)
+ * swaps slot i = gridSize-1-t with a slot j drawn over range i+1.
  */
 export function computePermutationFromBuffer(
   keyBuffer: Buffer,
   clientSeed: string,
   nonce: number,
-  gridSize = GRID_SIZE,
+  gridSize: number = GRID_SIZE,
   census?: DrawCensus,
 ): number[] {
-  const positions: number[] = Array.from({ length: gridSize }, (_, i) => i);
-
-  for (let i = gridSize - 1; i > 0; i--) {
-    const range   = i + 1;
-    let cursor    = gridSize - 1 - i;
-    if (census) census.draws++;
-
-    while (true) {
-      const message = `${clientSeed}:${nonce}:${cursor}`;
-      const hmac    = crypto.createHmac('sha256', keyBuffer).update(message).digest('hex');
-      let found     = false;
-
-      for (let off = 0; off + 8 <= hmac.length; off += 8) {
-        const value = parseInt(hmac.substring(off, off + 8), 16);
-        if (census) census.chunksRead++;
-        const j = drawFromChunk(value, range);
-        if (j !== null) {
-          [positions[i], positions[j]] = [positions[j], positions[i]];
-          found = true;
-          break;
-        }
-        if (census) census.rejectedChunks++;
-      }
-
-      if (found) break;
-      if (census) census.cursorAdvances++;
-      cursor++;
-    }
+  validateCommon(keyBuffer, clientSeed, nonce, gridSize);
+  const a: number[] = Array.from({ length: gridSize }, (_, n) => n);
+  for (let t = 0; t <= gridSize - 2; t++) {
+    const i = gridSize - 1 - t;
+    const j = drawIndex(keyBuffer, clientSeed, nonce, t, i + 1, census);
+    const tmp = a[i] as number;
+    a[i] = a[j] as number;
+    a[j] = tmp;
   }
-
-  return positions;
-}
-
-/** One range's row of the draw-bias bound. */
-export interface RangeBias {
-  range: number;
-  /** maxFairFor(range) — the constant the acceptance rule is written against. */
-  maxFair: number;
-  /** The accepted window's exclusive end AS MEASURED from drawFromChunk (binary search). */
-  acceptedWindow: number;
-  /** Chunk values in the rejected tail [acceptedWindow, 2^32). */
-  rejectedValues: number;
-  rejectionProbabilityPerChunk: number;
-  /** acceptedWindow mod range: 0 ⇔ every index receives the same number of accepted values. */
-  remainder: number;
-  minIndexCount: number;
-  maxIndexCount: number;
-  /** max over j of |P(j | accepted) − 1/range|. */
-  bias: number;
-  /** P(max) / P(min) − 1. */
-  relativeBias: number;
-  /** The same two figures for the UNCORRECTED draw (plain v mod range over all 2^32 values). */
-  uncorrectedBias: number;
-  uncorrectedRelativeBias: number;
-  /** Probes where drawFromChunk disagreed with "v < acceptedWindow ? v % range : null". */
-  predicateProbeFailures: number;
-  exact: boolean;
+  return a;
 }
 
 /**
- * THE DRAW BIAS BOUND, MEASURED FROM THE FUNCTION THE SHUFFLE CALLS (profile BEEF-08; ported
- * 2026-09-26 from Duel Mines src/rng.ts drawBiasBound, which runs the same shuffle on 25 tiles).
- *
- * For every range the shuffle draws on (2 … gridSize), the accepted window is located by binary
- * search on drawFromChunk itself — not read off maxFairFor — then ~600 probes (both ends of the
- * domain, both sides of the window edge, and a stride across it) confirm the predicate IS
- * "v < window ? v % range : null". Given that shape the per-index counts are exact integer
- * arithmetic: floor(W / range) or that plus one, the larger for the low `W mod range` indices.
+ * §2 Step 3 (last line): death points are the tile VALUES held in the first m
+ * slots of the shuffled array. Returned sorted ascending (the spec treats them
+ * as a set; §2 notes the capture records the set sorted).
  */
-export function drawBiasBound(gridSize = GRID_SIZE): {
-  algorithm: 'rejection-sampling';
-  domainSize: number;
-  ranges: RangeBias[];
-  worstBias: number;
-  worstRelativeBias: number;
-  worstUncorrectedBias: number;
-  worstUncorrectedRelativeBias: number;
-  inexactRanges: number[];
-  predicateProbeFailures: number;
-  /** Expected rejected chunks per round: Σ_r p_r / (1 − p_r) over the gridSize − 1 steps. */
-  expectedRejectedChunksPerRound: number;
-} {
-  const domainSize = MAX_UINT32 + 1;   // parseInt of 8 hex chars: 2^32 values
-  const ranges: RangeBias[] = [];
-  for (let range = 2; range <= gridSize; range++) {
-    let lo = 0, hi = domainSize;
-    if (drawFromChunk(0, range) === null) hi = 0;
-    while (hi - lo > 1) {
-      const mid = Math.floor((lo + hi) / 2);
-      if (drawFromChunk(mid, range) !== null) lo = mid; else hi = mid;
-    }
-    const W = hi === 0 ? 0 : (drawFromChunk(lo, range) !== null ? lo + 1 : lo);
-
-    const expect = (v: number): number | null => (v < W ? v % range : null);
-    const probes = new Set<number>();
-    for (let d = 0; d < 100; d++) {
-      probes.add(d);
-      probes.add(MAX_UINT32 - d);
-      if (W - 1 - d >= 0) probes.add(W - 1 - d);
-      if (W + d <= MAX_UINT32) probes.add(W + d);
-    }
-    for (let k = 0; k < 200; k++) probes.add(Math.floor(k * (domainSize / 200)) + (k % range));
-    let predicateProbeFailures = 0;
-    for (const v of probes) {
-      if (v < 0 || v > MAX_UINT32) continue;
-      if (drawFromChunk(v, range) !== expect(v)) predicateProbeFailures++;
-    }
-
-    const remainder = W % range;
-    const minIndexCount = Math.floor(W / range);
-    const maxIndexCount = remainder === 0 ? minIndexCount : minIndexCount + 1;
-    const bias = W === 0 ? 1
-      : Math.max(maxIndexCount * range - W, W - minIndexCount * range) / (W * range);
-    const relativeBias = minIndexCount === 0 ? Infinity : maxIndexCount / minIndexCount - 1;
-
-    const uRem = domainSize % range;
-    const uMin = Math.floor(domainSize / range);
-    const uMax = uRem === 0 ? uMin : uMin + 1;
-    const uncorrectedBias = Math.max(uMax * range - domainSize, domainSize - uMin * range) / (domainSize * range);
-    const uncorrectedRelativeBias = uMax / uMin - 1;
-
-    const rejectedValues = domainSize - W;
-    ranges.push({
-      range, maxFair: maxFairFor(range), acceptedWindow: W, rejectedValues,
-      rejectionProbabilityPerChunk: rejectedValues / domainSize,
-      remainder, minIndexCount, maxIndexCount, bias, relativeBias,
-      uncorrectedBias, uncorrectedRelativeBias, predicateProbeFailures,
-      exact: remainder === 0 && W > 0 && predicateProbeFailures === 0,
-    });
-  }
-  return {
-    algorithm: 'rejection-sampling',
-    domainSize,
-    ranges,
-    worstBias: Math.max(...ranges.map(r => r.bias)),
-    worstRelativeBias: Math.max(...ranges.map(r => r.relativeBias)),
-    worstUncorrectedBias: Math.max(...ranges.map(r => r.uncorrectedBias)),
-    worstUncorrectedRelativeBias: Math.max(...ranges.map(r => r.uncorrectedRelativeBias)),
-    inexactRanges: ranges.filter(r => !r.exact).map(r => r.range),
-    predicateProbeFailures: ranges.reduce((n, r) => n + r.predicateProbeFailures, 0),
-    expectedRejectedChunksPerRound: ranges.reduce(
-      (n, r) => n + r.rejectionProbabilityPerChunk / (1 - r.rejectionProbabilityPerChunk), 0),
-  };
+export function computeDeathPointsFromBuffer(
+  keyBuffer: Buffer,
+  clientSeed: string,
+  nonce: number,
+  deathPointsCount: number,
+  gridSize: number = GRID_SIZE,
+  census?: DrawCensus,
+): number[] {
+  validateCommon(keyBuffer, clientSeed, nonce, gridSize);
+  assertInt("deathPointsCount", deathPointsCount, 0, gridSize);
+  const a = computePermutationFromBuffer(keyBuffer, clientSeed, nonce, gridSize, census);
+  return a.slice(0, deathPointsCount).sort((x, y) => x - y);
 }
 
+/** §1.1: the server seed is 64 hex characters encoding 32 bytes. */
+function decodeServerSeed(serverSeed: string): Buffer {
+  if (typeof serverSeed !== "string" || !/^[0-9a-fA-F]{64}$/.test(serverSeed)) {
+    throw new TypeError("serverSeed must be 64 hexadecimal characters");
+  }
+  return Buffer.from(serverSeed, "hex");
+}
+
+/** §2 Step 1: the HMAC key is the hex-decoded server seed (32 raw bytes). */
 export function computeDeathPoints(
   serverSeed: string,
   clientSeed: string,
   nonce: number,
   deathPointsCount: number,
-  gridSize = GRID_SIZE,
+  gridSize: number = GRID_SIZE,
 ): number[] {
-  const key = Buffer.from(serverSeed, 'hex');
-  return computeDeathPointsFromBuffer(key, clientSeed, nonce, deathPointsCount, gridSize);
-}
-
-/** SHA-256 commit-reveal: verify SHA-256(hex_bytes(serverSeed)) === serverSeedHashed */
-export function verifyHash(serverSeed: string, serverSeedHashed: string): boolean {
-  const seedBytes = Buffer.from(serverSeed, 'hex');
-  const computed  = crypto.createHash('sha256').update(seedBytes).digest('hex');
-  return computed === serverSeedHashed;
+  return computeDeathPointsFromBuffer(decodeServerSeed(serverSeed), clientSeed, nonce, deathPointsCount, gridSize);
 }
 
 /**
- * Survival probability for reaching step k (completing k successful tiles) with
- * m death points on a gridSize=20 board. Hypergeometric:
- *   P(survive k) = C(gridSize - m, k) / C(gridSize, k)
- * Equivalently: (gridSize - m)!/(gridSize - m - k)! × (gridSize - k)!/gridSize!
+ * §1.2: commitment = lowercase hex of SHA-256 over the 32 decoded bytes (not the
+ * ASCII hex text). Returns false for a malformed seed instead of throwing.
  */
-export function survivalProbability(
-  deathPointsCount: number,
-  steps: number,
-  gridSize = GRID_SIZE,
-): number {
-  const n = gridSize;
-  const m = deathPointsCount;
-  const k = steps;
-  if (k === 0) return 1;
-  if (k > n - m) return 0;
-  return comb(n - m, k) / comb(n, k);
+export function verifyHash(serverSeed: string, serverSeedHashed: string): boolean {
+  let key: Buffer;
+  try {
+    key = decodeServerSeed(serverSeed);
+  } catch {
+    return false;
+  }
+  if (typeof serverSeedHashed !== "string") return false;
+  const computed = createHash("sha256").update(key).digest("hex");
+  return computed === serverSeedHashed.toLowerCase();
+}
+
+/** Exact binomial coefficient as a BigInt (0 when k > n). */
+function binom(n: number, k: number): bigint {
+  if (k < 0 || k > n) return 0n;
+  const kk = Math.min(k, n - k);
+  let r = 1n;
+  for (let i = 1; i <= kk; i++) {
+    r = (r * BigInt(n - kk + i)) / BigInt(i); // exact at every step
+  }
+  return r;
 }
 
 /**
- * Theoretical payout multiplier at step k — matches Duel's config.payout_tables.
- *   multiplier(k) = (1 - house_edge) × (C(n, k) / C(n - m, k))
- *   where n = gridSize, m = deathPointsCount.
- *
- * Example (EASY, k=1, m=1):
- *   raw    = C(20,1) / C(19,1) = 20/19 ≈ 1.05263158
- *   payout = raw × 0.992             ≈ 1.04421053 (matches config[1][0] exactly)
+ * §3.1: P(survive k steps | m) = C(g - m, k) / C(g, k). Both binomials are
+ * computed exactly, so the only rounding is the final division.
+ */
+export function survivalProbability(deathPointsCount: number, steps: number, gridSize: number = GRID_SIZE): number {
+  assertInt("gridSize", gridSize, 1, 1000);
+  assertInt("deathPointsCount", deathPointsCount, 0, gridSize);
+  assertInt("steps", steps, 0, gridSize);
+  const num = binom(gridSize - deathPointsCount, steps);
+  if (num === 0n) return 0;
+  return Number(num) / Number(binom(gridSize, steps));
+}
+
+/**
+ * §3.1: multiplier = (1 - e) / P(survive). This is the exact reference, not the
+ * fixed-precision chain Duel serves (§3.2). Throws where survival is impossible.
  */
 export function theoreticalMultiplier(
   deathPointsCount: number,
   steps: number,
-  houseEdge = HOUSE_EDGE,
-  gridSize = GRID_SIZE,
+  houseEdge: number = HOUSE_EDGE,
+  gridSize: number = GRID_SIZE,
 ): number {
-  const n = gridSize;
-  const m = deathPointsCount;
-  const k = steps;
-  return (comb(n, k) / comb(n - m, k)) * (1 - houseEdge);
-}
-
-/** Binomial coefficient C(n, k). Uses floating-point incremental form; OK for n ≤ 20. */
-function comb(n: number, k: number): number {
-  if (k < 0 || k > n) return 0;
-  if (k === 0 || k === n) return 1;
-  let result = 1;
-  for (let i = 0; i < k; i++) {
-    result = (result * (n - i)) / (i + 1);
+  if (!Number.isFinite(houseEdge) || houseEdge < 0 || houseEdge >= 1) {
+    throw new RangeError("houseEdge must be in [0, 1)");
   }
-  return result;
+  const p = survivalProbability(deathPointsCount, steps, gridSize);
+  if (p === 0) throw new RangeError(`cannot survive ${steps} steps with ${deathPointsCount} death points`);
+  // Divide the exact integers once rather than 1/p, to keep a single rounding.
+  const num = binom(gridSize, steps);
+  const den = binom(gridSize - deathPointsCount, steps);
+  return ((1 - houseEdge) * Number(num)) / Number(den);
 }

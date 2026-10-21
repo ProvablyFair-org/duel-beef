@@ -165,8 +165,11 @@ describe('Cryptographic Core — Known-Answer Tests (7 bets × all 4 difficultie
     assert.notDeepStrictEqual(a, b);
   });
 
-  it('throws if deathPointsCount >= gridSize', () => {
-    assert.throws(() => computeDeathPoints(SERVER_SEED, CLIENT_SEED, 0, 20));
+  // Through v1.1.0 this asserted a throw at deathPointsCount = gridSize (20), the guard of Duel's Verify-tab
+  // code (L47). The clean-room src/rng.ts is rebuilt from docs/ALGORITHM.md, which sets no such guard; it
+  // rejects only a count outside 0..gridSize. No Beef difficulty uses more than 10.
+  it('throws if deathPointsCount > gridSize', () => {
+    assert.throws(() => computeDeathPoints(SERVER_SEED, CLIENT_SEED, 0, 21));
   });
 });
 
@@ -285,11 +288,13 @@ describe('Payout Accuracy — every winning bet in the dataset', () => {
   });
 });
 
-// ── The operator's own Verify-tab code (profile BEEF-09) ──────────────────────
-describe('Operator source — Duel\'s own Beef Verify-tab code, executed with only its inputs filled in (pasted 2026-09-26)', function () {
+// ── The operator's own Verify-tab code, a second check (profile BEEF-09) ───────
+// src/rng.ts is rebuilt from docs/ALGORITHM.md by an implementer who never opened Duel's code; Duel's
+// published Verify-tab code is run here as a second check, not used as the source.
+describe('Second check — Duel\'s own Beef Verify-tab code, executed with only its inputs filled in (pasted 2026-09-26)', function () {
   this.timeout(300_000);
   // duel.com → Provably Fair → Verify (Beef) code panel, pasted by Paulo 2026-09-26, saved verbatim (src/operator-verifier.ts)
-  const { runOperatorVerifier, checkOperatorCites, operatorPrintedLine, OPERATOR_VERIFIER_PINS, OPERATOR_VERIFIER_FILE, OPERATOR_EXPECTED_LOGS } =
+  const { runOperatorVerifier, operatorPrintedLine, OPERATOR_VERIFIER_PINS, OPERATOR_VERIFIER_FILE, OPERATOR_EXPECTED_LOGS } =
     require('../../src/operator-verifier') as typeof import('../../src/operator-verifier');
   const { loadPhaseE } = require('../../src/loader') as typeof import('../../src/loader');
   const ds = loadDataset();
@@ -307,12 +312,6 @@ describe('Operator source — Duel\'s own Beef Verify-tab code, executed with on
     assert.strictEqual(run.files[0].actual, OPERATOR_VERIFIER_PINS[OPERATOR_VERIFIER_FILE]);
     assert.strictEqual(run.error, null);
     assert.deepStrictEqual(run.shippedLogs, [...OPERATOR_EXPECTED_LOGS]);
-  });
-
-  it('every operator line src/rng.ts cites carries the quoted text verbatim', () => {
-    const c = checkOperatorCites();
-    assert.deepStrictEqual(c.bad, []);
-    assert.ok(c.checked > 0);
   });
 
   it('fixed vectors: the operator code returns the 7 known death-point sets and prints its own line for each', () => {

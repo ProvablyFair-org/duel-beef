@@ -207,7 +207,7 @@
       "step": 5,
       "name": "Outcome Recomputation (Death Points)",
       "status": "PASS",
-      "detail": "6000/6000 verified, 0 mismatches, 0 skipped (unrevealed seeds). Draw bias bound (BEEF-08), measured from src/rng.ts drawFromChunk on all 19 ranges 2..20: every accepted window is an exact whole number of ranges (range 20: 4294967280 = 20 × 214748364), so every swap index is exactly equiprobable — worst bias 0, inside the 2^-32 ceiling (uncorrected v mod range would lean by up to 4.66e-9 relative, 2.19e-10 absolute). Rejection census over the 6,000 rounds: 114,000 draws, 114,000 chunks read, 0 rejected, 0 cursor advances (expected rejections 1.38e-4). Player-verifier parity (BEEF-24): the ProvablyFair.org docs-site derive.js (pinned, origin/main @ bd4d59c) executed on 6450/6450 rounds of both datasets — 0 death-point disagreements with src/rng.ts; its paid multiplier on 4539 wins within relative 1e-12 of the exact rational and the served figure. Operator-code parity (BEEF-09): Duel's own Beef Verify-tab code (evidence/verify-tab/duel-verify-tab-beef-2026-09-26.js, pasted by Paulo from duel.com Verify tab 2026-09-26 (duel.com → Provably Fair → Verify, game Beef, code panel), SHA-256 43ba4dfbd068cbf5…, pinned) executed with only its five \"User input values\" filled in (gridSize 20, deathPointsCount from the served difficulty) on 6450/6450 rounds of both datasets — its death points equal the served ones and src/rng.ts on every round (0 / 0 differ), the line it prints equals what its code prints for the returned list on 6450/6450, operator lines cited by src/rng.ts 17/17 verbatim",
+      "detail": "6000/6000 verified, 0 mismatches, 0 skipped (unrevealed seeds). Draw bias bound (BEEF-08), measured from src/rng.ts drawFromChunk on all 19 ranges 2..20: every accepted window is an exact whole number of ranges (range 20: 4294967280 = 20 × 214748364), so every swap index is exactly equiprobable — worst bias 0, inside the 2^-32 ceiling (uncorrected v mod range would lean by up to 4.66e-9 relative, 2.19e-10 absolute). Rejection census over the 6,000 rounds: 114,000 draws, 114,000 chunks read, 0 rejected, 0 moves to a further chunk (expected rejections 9.64e-5). Player-verifier parity (BEEF-24): the ProvablyFair.org docs-site derive.js (pinned, origin/main @ bd4d59c) executed on 6450/6450 rounds of both datasets — 0 death-point disagreements with src/rng.ts; its paid multiplier on 4539 wins within relative 1e-12 of the exact rational and the served figure. Operator-code parity (BEEF-09, a second check; src/rng.ts is rebuilt from docs/ALGORITHM.md): Duel's own Beef Verify-tab code (evidence/verify-tab/duel-verify-tab-beef-2026-09-26.js, pasted by Paulo from duel.com Verify tab 2026-09-26 (duel.com → Provably Fair → Verify, game Beef, code panel), SHA-256 43ba4dfbd068cbf5…, pinned) executed with only its five \"User input values\" filled in (gridSize 20, deathPointsCount from the served difficulty) on 6450/6450 rounds of both datasets — its death points equal the served ones and src/rng.ts on every round (0 / 0 differ), the line it prints equals what its code prints for the returned list on 6450/6450",
       "data": {
         "population": 6000,
         "verified": 6000,
@@ -223,10 +223,10 @@
           "ranges": [
             {
               "range": 2,
-              "acceptedWindow": 4294967294,
-              "perIndex": 2147483647,
+              "acceptedWindow": 4294967296,
+              "perIndex": 2147483648,
               "remainder": 0,
-              "rejectedValues": 2
+              "rejectedValues": 0
             },
             {
               "range": 3,
@@ -237,10 +237,10 @@
             },
             {
               "range": 4,
-              "acceptedWindow": 4294967292,
-              "perIndex": 1073741823,
+              "acceptedWindow": 4294967296,
+              "perIndex": 1073741824,
               "remainder": 0,
-              "rejectedValues": 4
+              "rejectedValues": 0
             },
             {
               "range": 5,
@@ -265,10 +265,10 @@
             },
             {
               "range": 8,
-              "acceptedWindow": 4294967288,
-              "perIndex": 536870911,
+              "acceptedWindow": 4294967296,
+              "perIndex": 536870912,
               "remainder": 0,
-              "rejectedValues": 8
+              "rejectedValues": 0
             },
             {
               "range": 9,
@@ -321,10 +321,10 @@
             },
             {
               "range": 16,
-              "acceptedWindow": 4294967280,
-              "perIndex": 268435455,
+              "acceptedWindow": 4294967296,
+              "perIndex": 268435456,
               "remainder": 0,
-              "rejectedValues": 16
+              "rejectedValues": 0
             },
             {
               "range": 17,
@@ -361,7 +361,7 @@
             "rejectedChunks": 0,
             "cursorAdvances": 0,
             "expectedDraws": 114000,
-            "expectedRejectedChunks": 0.00013830140261174902
+            "expectedRejectedChunks": 0.00009639188664346387
           }
         },
         "siteVerifier": {
@@ -427,8 +427,6 @@
           "differsFromRng": 0,
           "printedEqualsReturned": 6450,
           "errors": 0,
-          "citesChecked": 17,
-          "citesBad": 0,
           "issues": []
         }
       },
@@ -446,7 +444,7 @@
         {
           "id": "BEEF-08",
           "coverage": "full",
-          "note": "added 2026-09-26 (ported from Duel Mines Step 5): the bound is MEASURED from src/rng.ts drawFromChunk — the function the shuffle calls — on all 19 ranges 2..20 (binary search for the accepted window + ~600 predicate probes per range); FAIL unless every window is an exact whole number of ranges and the worst per-index bias is inside 2^-32. Measured: exact on all 19 (range 20: 4,294,967,280 = 20 × 214,748,364), worst bias 0. The rejection census over the 6,000 recomputed rounds (114,000 draws) is printed with its expectation. FAIL probed (maxFairFor changed to accept every value below 2^32 − 1)"
+          "note": "added 2026-09-26 (the same bound as Step 5 of the Duel Mines audit package; since 20 Oct 2026 in src/bias.ts, built on the clean-room src/rng.ts): the bound is MEASURED from src/rng.ts drawFromChunk — the function the shuffle calls — on all 19 ranges 2..20 (binary search for the accepted window + ~600 predicate probes per range); FAIL unless every window is an exact whole number of ranges and the worst per-index bias is inside 2^-32. Measured: exact on all 19 (range 20: 4,294,967,280 = 20 × 214,748,364; ranges 2, 4, 8, 16: the whole 2^32 domain, no rejection), worst bias 0. The rejection census over the 6,000 recomputed rounds (114,000 draws) is printed with its expectation. FAIL probed (maxFairFor changed to accept every value below 2^32 − 1)"
         },
         {
           "id": "BEEF-24",
@@ -518,7 +516,7 @@
         {
           "id": "BEEF-13",
           "coverage": "full",
-          "note": "k = 1 arm (all primary wins, 4,337): both served strings parsed EXACTLY and compared with the exact rational (src/exact.ts) — multiplier with C(20,k)/C(20−m,k), no_house_edge_multiplier with the same × 992/1000 — at MULT_REL_TOL = 1e-12 relative, which replaced 1e-6 ABSOLUTE on 2026-09-26. No exact equality is available: the operator's k > 1 values carry double error (worst measured 9.63e-15, Steps 20/22), so 1e-12 leaves ~100× headroom; the worst deviation is emitted every run. The derivation reads (m, k) only; the formula's origin is Duel's /cross-road/config payout table (src/rng.ts:30, :290-298). FAIL probed (one served multiplier moved 1e-9 relative — the old 1e-6 bound passed it). Rungs k > 1: Step 20; Phase C: Step 10"
+          "note": "k = 1 arm (all primary wins, 4,337): both served strings parsed EXACTLY and compared with the exact rational (src/exact.ts) — multiplier with C(20,k)/C(20−m,k), no_house_edge_multiplier with the same × 992/1000 — at MULT_REL_TOL = 1e-12 relative, which replaced 1e-6 ABSOLUTE on 2026-09-26. No exact equality is available: the operator's k > 1 values carry double error (worst measured 9.63e-15, Steps 20/22), so 1e-12 leaves ~100× headroom; the worst deviation is emitted every run. The derivation reads (m, k) only; the formula's origin is Duel's /cross-road/config payout table (docs/ALGORITHM.md §3.1; src/rng.ts:41, :239-254). FAIL probed (one served multiplier moved 1e-9 relative — the old 1e-6 bound passed it). Rungs k > 1: Step 20; Phase C: Step 10"
         }
       ]
     },
@@ -742,7 +740,7 @@
         "combosTested": 61,
         "maxDeviation": 2.220446049250313e-16,
         "bound": 1e-10,
-        "worstConfig": "d=2 (m=3), k=4",
+        "worstConfig": "d=1 (m=1), k=17",
         "anchorMismatches": 0,
         "exactIdentityFailures": 0,
         "negativeControlAccepted": 0
@@ -1008,8 +1006,8 @@
           },
           {
             "file": "simulation-results.json",
-            "pin": "d49f95a23cbd3d6839761fdefc19c3ffa4103a42bd2b892eb7511a54ea5af358",
-            "actual": "d49f95a23cbd3d6839761fdefc19c3ffa4103a42bd2b892eb7511a54ea5af358",
+            "pin": "7119a3e3743fbd288bf81477ce52ec289b67ea80b4be4fc70663b1a78dd5f613",
+            "actual": "7119a3e3743fbd288bf81477ce52ec289b67ea80b4be4fc70663b1a78dd5f613",
             "match": true
           }
         ],
@@ -1170,9 +1168,9 @@
     "packageChecks": [
       {
         "id": "BEEF-09",
-        "artifact": "tests/beef/BeefTests.ts (Operator source block) + src/rng.ts OPERATOR_SOURCE_CITES + src/operator-verifier.ts + Step 5",
+        "artifact": "docs/ALGORITHM.md + tests/beef/RngSpecTests.ts + tests/beef/BeefTests.ts (Second check block) + src/operator-verifier.ts + Step 5",
         "coverage": "full",
-        "note": "CLOSED 2026-09-26 (was partial: Duel's Beef Verify-tab code was not in the workspace). Duel's own Beef Verify-tab code, pasted by Paulo from duel.com Verify tab 2026-09-26, is vendored verbatim at evidence/verify-tab/duel-verify-tab-beef-2026-09-26.js (E06, SHA-256 43ba4dfb…, never edited) and pinned with its runner in src/operator-verifier.ts. The asserts, each met: (1) \"unit tests reproduce at least one captured bet … against the operator's published algorithm\" — the Operator source block in tests/beef/BeefTests.ts EXECUTES the pinned file with only its five \"User input values\" filled in (gridSize 20, deathPointsCount from the served difficulty) on all 6,450 captured rounds of both datasets: its death points equal the served ones and src/rng.ts on 6,450/6,450; (2) \"fixed vectors\" — the 7 known-answer bets through the same file, returned set and printed line both exact; (3) \"the adapter cites the operator source line it ports\" — src/rng.ts OPERATOR_SOURCE_CITES names 17 lines of the pinned file, each checked verbatim (17/17). Step 5 runs the same execution in the verifier. The earlier unit tests stay (7 vectors × 4 difficulties, hex-key control, tampered-seed control, full recompute). FAIL probed: M05e (a line of the file changed AND re-pinned), M05f (file byte, no re-pin), M05g (runner byte, no re-pin), M05h (runner forged AND re-pinned), M05i (a citation moved). Not established: that the Verify button, or Duel's server, runs exactly this code"
+        "note": "REWRITTEN 2026-10-20 (v1.2.0). src/rng.ts is rebuilt from a written specification, docs/ALGORITHM.md (framework games/beef/ALGORITHM.md), by an implementer who never opened Duel's code; Duel's published Verify-tab code is run as a second check, not used as the source. Through v1.1.0 src/rng.ts followed that code step for step and cited 17 of its lines (OPERATOR_SOURCE_CITES); that code and the citation table are gone. CLOSED 2026-09-26 (was partial: Duel's Beef Verify-tab code was not in the workspace). Duel's own Beef Verify-tab code, pasted by Paulo from duel.com Verify tab 2026-09-26, is vendored verbatim at evidence/verify-tab/duel-verify-tab-beef-2026-09-26.js (E06, SHA-256 43ba4dfb…, never edited) and pinned with its runner in src/operator-verifier.ts. The asserts, each met: (1) \"unit tests reproduce at least one captured bet … against the operator's published algorithm\" — the Second check block in tests/beef/BeefTests.ts EXECUTES the pinned file with only its five \"User input values\" filled in (gridSize 20, deathPointsCount from the served difficulty) on all 6,450 captured rounds of both datasets: its death points equal the served ones and src/rng.ts on 6,450/6,450; (2) \"fixed vectors\" — the 7 known-answer bets through the same file, returned set and printed line both exact; and tests/beef/RngSpecTests.ts runs the spec's own §5 vectors and properties against src/rng.ts (105/105); (3) \"the adapter cites the operator source line it ports\" — superseded for this package by the 20 Oct 2026 rule that RNG code is rebuilt from a written spec: nothing is ported, so no operator line is cited; docs/ALGORITHM.md §4 names the source of every step instead (Duel's public pages, the standard construction, Duel's public config, or the 6,450 live rounds). Step 5 runs the same execution in the verifier. The earlier unit tests stay (7 vectors × 4 difficulties, hex-key control, tampered-seed control, full recompute). Where the two can differ, no captured round reaches: at ranges 2, 4, 8 and 16 src/rng.ts accepts every 32-bit chunk while Duel's code rejects the top `range` values, and when all 8 chunks of a draw are rejected src/rng.ts throws (spec open point O1) while Duel's code draws again on the next counter. FAIL probed: M05e (a line of the file changed AND re-pinned), M05f (file byte, no re-pin), M05g (runner byte, no re-pin), M05h (runner forged AND re-pinned); M05i (a citation moved) was retired on 20 Oct 2026 with the citation table. Not established: that the Verify button, or Duel's server, runs exactly this code"
       },
       {
         "id": "BEEF-23",
@@ -1196,7 +1194,7 @@
         "id": "BEEF-29",
         "artifact": "tests/mutations.json + scripts/mutate.mjs",
         "coverage": "full",
-        "note": "added 2026-09-26 (runner ported from Duel Video Poker): a step-named registry of mutations (38 on 2026-09-26; 42 since 2026-10-06, when M19b–M19e were added for Step 19) run in a disposable copy by `npm run mutate` (300 s hard timeout per run); each names the step that must die and a marker that must appear, so the INTENDED guard fires; includes forgeries that edit a pinned artifact AND re-pin it (M18, M19) and a site-verifier forgery re-pinned (M05c). Measured 2026-09-26 (re-run after Steps 24–25 and M23b/M24/M25 were added): 33/33 killed; re-run the same day after Duel's Verify-tab code was wired into Step 5 (M05e–M05i added: operator file forged AND re-pinned, file and runner edited without re-pin, runner forged AND re-pinned, a citation moved): 38/38 killed, 25/25 scored steps have a killing mutation (the runner reads the scored steps from the baseline run). No declared survivors. The result of the latest run is declared in RELEASE-MANIFEST.json (falsifiability)"
+        "note": "added 2026-09-26 (runner ported from Duel Video Poker): a step-named registry of mutations (38 on 2026-09-26; 42 since 2026-10-06, when M19b–M19e were added for Step 19) run in a disposable copy by `npm run mutate` (300 s hard timeout per run); each names the step that must die and a marker that must appear, so the INTENDED guard fires; includes forgeries that edit a pinned artifact AND re-pin it (M18, M19) and a site-verifier forgery re-pinned (M05c). Measured 2026-09-26 (re-run after Steps 24–25 and M23b/M24/M25 were added): 33/33 killed; re-run the same day after Duel's Verify-tab code was wired into Step 5 (M05e–M05i added: operator file forged AND re-pinned, file and runner edited without re-pin, runner forged AND re-pinned, a citation moved): 38/38 killed, 25/25 scored steps have a killing mutation (the runner reads the scored steps from the baseline run). On 20 Oct 2026 M05i (a citation moved) was retired with the citation table, and M05d and M06 were retargeted to the clean-room src/rng.ts. No declared survivors. The result of the latest run is declared in RELEASE-MANIFEST.json (falsifiability)"
       },
       {
         "id": "BEEF-30",

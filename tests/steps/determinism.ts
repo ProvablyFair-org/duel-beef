@@ -2,21 +2,26 @@
  * Steps 5–6: RNG Determinism
  *
  * Step 5 owns the shuffle, so it also carries the draw-bias bound (profile BEEF-08) and the
- * player-verifier parity leg (BEEF-24) — both ported 2026-09-26 from Duel Mines Step 5, which runs
- * the same shuffle on 25 tiles.
+ * player-verifier parity leg (BEEF-24) — both added 2026-09-26, the same legs as Step 5 of the
+ * ProvablyFair.org Duel Mines audit package, which runs the same shuffle on 25 tiles.
+ *
+ * src/rng.ts is rebuilt from the written spec docs/ALGORITHM.md by an implementer who never opened
+ * Duel's code (20 Oct 2026). Duel's published Verify-tab code is run here as a SECOND CHECK (the
+ * fourth leg), not used as the source.
  */
 
 import type { StepResult } from './context';
 import { step, VerifyContext } from './context';
 import {
-  computeDeathPointsFromBuffer, computePermutationFromBuffer, computeDeathPoints, drawBiasBound, newDrawCensus,
+  computeDeathPointsFromBuffer, computePermutationFromBuffer, computeDeathPoints, newDrawCensus,
   DEATH_POINTS_BY_DIFFICULTY, GRID_SIZE,
 } from '../../src/rng';
+import { drawBiasBound } from '../../src/bias';
 import { EXPECTED_BETS, EXPECTED_PHASE_E_BETS } from '../../src/loader';
 import { exactMultiplier, relativeDeviation, MULT_REL_TOL } from '../../src/exact';
 import { loadSiteVerifier, SITE_VERIFIER_PROVENANCE } from '../../src/site-verifier';
 import {
-  runOperatorVerifier, checkOperatorCites, operatorPrintedLine, OPERATOR_EXPECTED_LOGS, OPERATOR_VERIFIER_PROVENANCE,
+  runOperatorVerifier, operatorPrintedLine, OPERATOR_EXPECTED_LOGS, OPERATOR_VERIFIER_PROVENANCE,
 } from '../../src/operator-verifier';
 
 /** The profile's ceiling on draw bias (BEEF-08, methodology S2): one part in 2^32. */
@@ -129,15 +134,14 @@ export function run(ctx: VerifyContext): StepResult[] {
   if (siteMultMismatches > 0) siteIssues.push(`site cashoutMultiplier off the exact paid multiplier (or the served one) on ${siteMultMismatches} win(s)`);
   s5Issues.push(...siteIssues);
 
-  // ── Step 5, fourth leg: THE OPERATOR'S OWN Verify-tab code (BEEF-09) ────────
-  // Duel's Beef code panel, pasted by Paulo from the Verify tab on 2026-09-26, vendored verbatim under
+  // ── Step 5, fourth leg: THE OPERATOR'S OWN Verify-tab code, a second check (BEEF-09) ──
+  // Not the source of src/rng.ts (rebuilt from docs/ALGORITHM.md); run to show it agrees. Duel's Beef code panel, pasted by Paulo from the Verify tab on 2026-09-26, vendored verbatim under
   // evidence/verify-tab/ and pinned in src/operator-verifier.ts. The pinned runner fills in the file's
   // five "User input values" (clientSeed, serverSeed, nonce, deathPointsCount from the served
   // difficulty_level via DEATH_POINTS_BY_DIFFICULTY, gridSize = GRID_SIZE) and runs it, on EVERY round of
   // both datasets. Its generateDeathPoints must return exactly the served death points (mines_positions,
   // sorted) AND src/rng.ts's; the line it prints must be the one its own code prints for that list; as
-  // shipped it must print only its empty-input line; every operator line src/rng.ts cites must carry its
-  // text. HARD FAIL otherwise, or on a count other than EXPECTED_BETS + EXPECTED_PHASE_E_BETS.
+  // shipped it must print only its empty-input line. HARD FAIL otherwise, or on a count other than EXPECTED_BETS + EXPECTED_PHASE_E_BETS.
   const opIssues: string[] = [];
   const opAll = [...bets, ...ctx.phaseE];
   const opRounds: Array<{ id: string; inputs: { clientSeed: string; serverSeed: string; nonce: number; deathPointsCount: number; gridSize: number } }> = [];
@@ -148,7 +152,6 @@ export function run(ctx: VerifyContext): StepResult[] {
       deathPointsCount: DEATH_POINTS_BY_DIFFICULTY[b.response.difficulty_level], gridSize: GRID_SIZE } });
   });
   const op = runOperatorVerifier(opRounds);
-  const opCites = checkOperatorCites();
   let opChecked = 0, opVsServed = 0, opVsRng = 0, opPrinted = 0, opErrors = 0;
   const opFirst: string[] = [];
   if (!op.results) {
@@ -176,7 +179,6 @@ export function run(ctx: VerifyContext): StepResult[] {
         + `${opErrors} run error(s), printed ≠ returned on ${opChecked - opErrors - opPrinted} (${opFirst.join('; ')})`);
     }
   }
-  if (opCites.bad.length > 0 || opCites.checked === 0) opIssues.push(`src/rng.ts operator citations: ${opCites.bad.slice(0, 2).join('; ')}`);
   if (opIssues.length > 0) s5Issues.push(`OPERATOR VERIFY-TAB CODE PARITY (BEEF-09): ${opIssues.join('; ')}`);
 
   const s5 = step(5, 'Outcome Recomputation (Death Points)',
@@ -189,17 +191,16 @@ export function run(ctx: VerifyContext): StepResult[] {
         + `, so every swap index is exactly equiprobable — worst bias 0, inside the 2^-32 ceiling (uncorrected v mod range `
         + `would lean by up to ${bb.worstUncorrectedRelativeBias.toExponential(2)} relative, ${bb.worstUncorrectedBias.toExponential(2)} absolute). `
         + `Rejection census over the ${verifiedCount.toLocaleString()} rounds: ${census.draws.toLocaleString()} draws, `
-        + `${census.chunksRead.toLocaleString()} chunks read, ${census.rejectedChunks} rejected, ${census.cursorAdvances} cursor advances `
+        + `${census.chunksRead.toLocaleString()} chunks read, ${census.rejectedChunks} rejected, ${census.cursorAdvances} moves to a further chunk `
         + `(expected rejections ${expectedRejectedChunks.toExponential(2)}). Player-verifier parity (BEEF-24): the ProvablyFair.org `
         + `docs-site derive.js (pinned, ${SITE_VERIFIER_PROVENANCE.ref} @ ${SITE_VERIFIER_PROVENANCE.head.slice(0, 7)}) executed on `
         + `${siteCompared}/${siteExpected} rounds of both datasets — 0 death-point disagreements with src/rng.ts; its paid multiplier on `
         + `${siteMultChecked} wins within relative ${MULT_REL_TOL.toExponential(0)} of the exact rational and the served figure. `
-        + `Operator-code parity (BEEF-09): Duel's own Beef Verify-tab code (${OPERATOR_VERIFIER_PROVENANCE.savedAs}, `
+        + `Operator-code parity (BEEF-09, a second check; src/rng.ts is rebuilt from docs/ALGORITHM.md): Duel's own Beef Verify-tab code (${OPERATOR_VERIFIER_PROVENANCE.savedAs}, `
         + `${OPERATOR_VERIFIER_PROVENANCE.from}, SHA-256 ${OPERATOR_VERIFIER_PROVENANCE.sha256.slice(0, 16)}…, pinned) executed with only its `
         + `five "User input values" filled in (gridSize ${GRID_SIZE}, deathPointsCount from the served difficulty) on ${opChecked}/${siteExpected} `
         + `rounds of both datasets — its death points equal the served ones and src/rng.ts on every round (${opVsServed} / ${opVsRng} differ), `
-        + `the line it prints equals what its code prints for the returned list on ${opPrinted}/${opChecked}, operator lines cited by src/rng.ts `
-        + `${opCites.checked - opCites.bad.length}/${opCites.checked} verbatim`
+        + `the line it prints equals what its code prints for the returned list on ${opPrinted}/${opChecked}`
       : `STEP 5 FAILED: ${s5Issues.join('; ')}`,
     {
       population: bets.length, verified: verifiedCount, mismatches, skipped,
@@ -219,7 +220,7 @@ export function run(ctx: VerifyContext): StepResult[] {
         files: op.files.map(f => ({ file: f.file, pinnedSha256: f.pinned, actualSha256: f.actual, match: f.match })),
         provenance: OPERATOR_VERIFIER_PROVENANCE, roundsExecuted: opChecked, expected: siteExpected,
         differsFromServed: opVsServed, differsFromRng: opVsRng, printedEqualsReturned: opPrinted, errors: opErrors,
-        citesChecked: opCites.checked, citesBad: opCites.bad.length, issues: opIssues,
+        issues: opIssues,
       },
     },
   );
@@ -235,7 +236,7 @@ export function run(ctx: VerifyContext): StepResult[] {
   // permutation the RNG produces (src/rng.ts computePermutationFromBuffer), where a chance
   // repeat has probability 1/20! (~4e-19), and requires every bet to change. The projection
   // count is still reported, in the data block, so the old figure stays explainable.
-  // EMPTY-SEED CONTROL (2026-09-26, ported from Duel Mines/Dice Step 6): the same comparison with
+  // EMPTY-SEED CONTROL (2026-09-26, the same control as Step 6 of the Duel Mines/Dice audit packages): the same comparison with
   // clientSeed = "" on every bet. An implementation that ignored a non-empty client seed but not
   // the empty string, or keyed on its length, would show here; the bar is again every bet.
   const WRONG_CLIENT = 'wrong-client-seed-test';
