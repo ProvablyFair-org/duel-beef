@@ -1,6 +1,6 @@
 # Duel Beef — Provably Fair Audit
 
-**Auditor:** [ProvablyFair.org](https://www.provablyfair.org) · **Audit ID:** PF-2026-DL06 · **Release:** `v1.2.0` · **Capture:** 16–21 April 2026
+**Auditor:** [ProvablyFair.org](https://www.provablyfair.org) · **Audit ID:** PF-2026-DL06 · **Release:** `v1.2.1` · **Capture:** 16–21 April 2026
 
 **Result: PROVABLY FAIR — Full Pass.** Every death-point layout in the 6,450-bet dataset (6,000 primary + 450 Phase E multi-step) reproduces from (serverSeed, clientSeed, nonce). The verifier reports 24 passing steps of 25, one disclosed capture-origin flag and no hard failures. The flag is Step 4: two nonces the capture missed on retried requests, one per data file; their death points are reconstructed from the revealed seeds, but the rounds were not captured. It is verdict-neutral. Step 19, the seed-selection test, passes and discloses one observation: one of the 121 casino seeds (commitment `c9ddfba9…7121b568`, client seed `Ty1rZcxKscWFXxqt`) is off in both of its windows, 36 wins in its first 50 nonces (p = 0.010042) and 8,387 in the next 9,950 (p = 0.047777), against the 85% first-step win chance on tile 0, Beef's first tile. A fair game gives at least one such seed among 121 about one time in four, so the step tests the count of such seeds: 2 would be a FLAG, 3 a FAIL.
 

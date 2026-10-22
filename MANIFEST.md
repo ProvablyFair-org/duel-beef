@@ -1,6 +1,6 @@
 # Duel Beef — Consolidated Audit Overview
 
-**Audit ID:** PF-2026-DL06 · **Auditor:** ProvablyFair.org · **Release:** `v1.2.0` · **Framework:** 1.1
+**Audit ID:** PF-2026-DL06 · **Auditor:** ProvablyFair.org · **Release:** `v1.2.1` · **Framework:** 1.1
 
 Game: Beef (Cross-Road) on [Duel.com](https://duel.com). Audit date: April 2026. Capture window across both data files: `2026-04-16T18:49:34.137Z` to `2026-04-21T15:54:58.815Z`. Original publication: 4 June 2026. Runtime: Node 22.x (`package.json` `engines`, `.nvmrc`). Audit report: https://audit.provablyfair.org/casino/duel/games/beef/overview. This overview consolidates the package documentation. The machine-readable release identity remains in [RELEASE-MANIFEST.json](RELEASE-MANIFEST.json).
 
@@ -690,6 +690,7 @@ What does not need changing: the RNG algorithm (backward Fisher-Yates with HMAC-
 | `v1.0.0` | The original audit, published 4 June 2026, tagged at `b9ac903`. | PROVABLY FAIR — Full Pass |
 | `v1.1.0` | Re-certification under Framework 1.1, October 2026, below. The dataset of record is unchanged. | PROVABLY FAIR — Full Pass |
 | `v1.2.0` | The RNG rebuilt from a written specification instead of following Duel's code; Duel's code kept as a second check. Below, "21 October 2026" and "20 October 2026". | unchanged |
+| `v1.2.1` | Errata: adds `.gitattributes` (`* -text`) so a Windows git clone keeps every file byte-identical; no audit content changed. | unchanged |
 
 ### 21 October 2026 — final QA corrections (v1.2.0)
 
