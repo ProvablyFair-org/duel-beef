@@ -27,10 +27,9 @@
  * house-side failure, because there is no figure to fall short of. flat and range are unchanged
  * from 1.0.0.
  *
- * 1.2.0 — Methodology v1.1. Agreed 2026-10-14 (decisions D2, D3; Mike, DM 14 Oct 14:32 UTC:
- * "D2: as written. The edge in Duel's game settings counts, no screenshot needed." / "D3: rule 1.2.0
- * switched on for all three casinos. A miss is a fail until fixed, but reported as 'RTP Figure
- * Overstated', not 'Not Provably Fair', since the draws themselves pass."). What changes:
+ * 1.2.0 — Methodology v1.1, 2026-10-14: an edge stated in the game's own settings counts as the published
+ * figure; the rule is enforced, and a miss is reported as RTP FIGURE OVERSTATED, not NOT PROVABLY FAIR,
+ * since the draws themselves pass. What changes:
  *
  *   - PLACES. A figure can be shown on the game page, the fairness page, the help page, the bet
  *     panel, the rules, or in the game settings the casino's site loads (a stated edge or RTP there
@@ -647,7 +646,7 @@ const NEVER_A_MISS: ReadonlyArray<RtpOutcome> = ['NO_CLAIM', 'NOTED', 'PUBLISHED
 
 /**
  * The status a package's -19 step takes from this rule. Not enforced → 'INFO' (printed, never
- * counted, verdict unchanged). Enforced → 'PASS', or 'OVERSTATED' for a miss (1.2.0, D3: the
+ * counted, verdict unchanged). Enforced → 'PASS', or 'OVERSTATED' for a miss (1.2.0: the
  * package verdict is RTP FIGURE OVERSTATED, see rtpClaimVerdict — never NOT PROVABLY FAIR).
  * NO_CLAIM, NOTED and PUBLISHED → 'INFO' either way.
  */

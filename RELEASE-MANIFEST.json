@@ -2,7 +2,7 @@
   "auditId": "PF-2026-DL06",
   "game": "beef",
   "casino": "duel",
-  "release": "v1.2.1",
+  "release": "v1.2.2",
   "framework": "1.1",
   "simulation": {
     "seeding": "pinned",
@@ -51,7 +51,7 @@
     "stage": "production",
     "qualifier": null
   },
-  "supersedes": "v1.2.0",
+  "supersedes": "v1.2.1",
   "signature": "SHA256:gEujiJm2pRyq7lQsfYQfQ1r97H/J7GdaKHbOW8GtikY",
   "falsifiability": {
     "registry": "tests/mutations.json",

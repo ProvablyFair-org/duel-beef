@@ -27,12 +27,12 @@ const DECLARED = {
   auditId: 'PF-2026-DL06',
   game: 'beef',
   casino: 'duel',
-  release: 'v1.2.1',
+  release: 'v1.2.2',
   framework: '1.1',
   environmentHost: 'duel.com',
   environmentStage: 'production',
   environmentQualifier: null,
-  supersedes: 'v1.2.0',
+  supersedes: 'v1.2.1',
   signature: 'SHA256:gEujiJm2pRyq7lQsfYQfQ1r97H/J7GdaKHbOW8GtikY',
   pending: '',
 };
@@ -97,7 +97,7 @@ const mutations = fs.existsSync(abs('tests/mutations.json')) ? readJson('tests/m
 const artifacts = {};
 for (const rel of ARTIFACTS) { const h = sha256(rel); if (h) artifacts[rel] = h; }
 
-// One summary shape across the Duel packages (Mike 2026-09-28, F20):
+// One summary shape across the Duel packages (QA finding F20, 2026-09-28):
 // { passed, flags, operatorFlags, captureFlags, hardFail, verdict }.
 const summary = results?.summary ?? {};
 const verdict = summary.verdict;

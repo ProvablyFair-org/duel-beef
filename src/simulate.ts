@@ -442,7 +442,7 @@ fs.writeFileSync(path.join(OUTPUTS_DIR, 'simulation-results.json'), JSON.stringi
 const finalPoint = convergenceData[convergenceData.length - 1];
 const finalRTP   = finalPoint.meanRTP;
 
-// Chart.js is INLINED into the pinned chart (Mike 2026-09-28, F16): a pinned artifact that loads a script
+// Chart.js is INLINED into the pinned chart (QA finding F16, 2026-09-28): a pinned artifact that loads a script
 // from a CDN renders only while a third party serves the same bytes. The library is read verbatim from the
 // npm package pinned (exact version) in package.json / package-lock.json and interpolated as a value.
 const CHARTJS_VERSION = '4.4.7';

@@ -17,7 +17,7 @@
  *     P(win) = (20 − m)/20) and the four Phase E sub-phases (one difficulty to one target depth each,
  *     P(win) = C(20−m,k)/C(20,k) at k = target_k). Two-sided exact binomial p-value.
  *
- * A deviation turns the step to INFO — never to FLAG or FAIL: profile policy INFORMATIONAL (Mike
+ * A deviation turns the step to INFO — never to FLAG or FAIL: profile policy INFORMATIONAL (adopted
  * 2026-09-29), reported, never counted, verdict unchanged. The measured statistics live in `data`; the
  * sentence states the bounds.
  */

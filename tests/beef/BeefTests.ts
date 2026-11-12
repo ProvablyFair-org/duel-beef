@@ -293,7 +293,7 @@ describe('Payout Accuracy — every winning bet in the dataset', () => {
 // published Verify-tab code is run here as a second check, not used as the source.
 describe('Second check — Duel\'s own Beef Verify-tab code, executed with only its inputs filled in (pasted 2026-09-26)', function () {
   this.timeout(300_000);
-  // duel.com → Provably Fair → Verify (Beef) code panel, pasted by Paulo 2026-09-26, saved verbatim (src/operator-verifier.ts)
+  // duel.com → Provably Fair → Verify (Beef) code panel, pasted by ProvablyFair.org 2026-09-26, saved verbatim (src/operator-verifier.ts)
   const { runOperatorVerifier, operatorPrintedLine, OPERATOR_VERIFIER_PINS, OPERATOR_VERIFIER_FILE, OPERATOR_EXPECTED_LOGS } =
     require('../../src/operator-verifier') as typeof import('../../src/operator-verifier');
   const { loadPhaseE } = require('../../src/loader') as typeof import('../../src/loader');

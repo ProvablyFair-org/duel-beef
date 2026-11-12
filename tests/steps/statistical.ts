@@ -2,7 +2,7 @@
  * Live-bet statistical context (informational, not scored).
  * At n<1000/config these tests lack power — authoritative results come from simulation.
  *
- * Removed 2026-10-06 (Mike's review, 6 Oct): the lag-1 autocorrelation and Wald-Wolfowitz runs test
+ * Removed 2026-10-06 (QA review, 6 Oct): the lag-1 autocorrelation and Wald-Wolfowitz runs test
  * on the capture's difficulty_level sequence. They measured the order in which the capture chose
  * difficulties, not the game's randomness, and MANIFEST.md had already dropped them on 2026-10-05.
  */

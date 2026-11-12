@@ -87,7 +87,7 @@ export interface BeefDataset {
 export interface StepResult {
   step: number;
   name: string;
-  /** INFO: an informational step's deviation (profile policy INFORMATIONAL — the live-sample fit, Mike
+  /** INFO: an informational step's deviation (profile policy INFORMATIONAL — the live-sample fit, adopted
    *  2026-09-29): reported, never counted as a flag, never affects the verdict. */
   status: 'PASS' | 'FLAG' | 'FAIL' | 'INFO';
   detail: string;

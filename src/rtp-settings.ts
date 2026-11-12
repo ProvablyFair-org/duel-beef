@@ -3,7 +3,7 @@
  *
  * The rule is src/rtp-claim.ts, a byte-identical copy of the framework's core/rtp-claim.ts (its
  * SHA-256 is compared by conformance C-13), version 1.2.0 (Methodology v1.1, agreed 2026-10-14;
- * 1.0.0 agreed on Slack 2026-09-29). The enforcement switch RTP_CLAIM_RULE_ENFORCED is the
+ * 1.0.0 adopted 2026-09-29). The enforcement switch RTP_CLAIM_RULE_ENFORCED is the
  * package's own src/rtp-claim-switch.ts, set to true (decision D3): the outcome is scored on the
  * step carrying BEEF-19, and a house-side miss makes the verdict RTP FIGURE OVERSTATED (exit 5),
  * never NOT PROVABLY FAIR. The claim names one of the rule's six places: the game settings.

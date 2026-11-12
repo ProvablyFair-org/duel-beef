@@ -93,7 +93,7 @@ export const SIM_PASS2_DIFFICULTY    = 2 as const;
 // (Step 9 asserts it on all 6,450 captured rounds), so a one-step round wins iff tile 0 is not a death
 // point. Pass 2 and Step 19's replay use it, and Step 19 checks it against the first stepped tile of
 // every captured round. Until 2026-10-06 both checked the rotating tile nonce % 20 instead, which is
-// not Beef's first-step rule (Mike's review, 6 Oct 2026).
+// not Beef's first-step rule (QA review, 6 Oct 2026).
 export const SIM_FIRST_STEP_TILE     = 0;
 
 // Live-sample fit (profile BEEF-22, Step 25): family level for the informational fits.

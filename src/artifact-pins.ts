@@ -32,11 +32,11 @@
  * commit, with the run that produced it.
  *
  * rtp-convergence.html RE-PINNED 2026-09-28 (previous pin b26044a8…): Chart.js 4.4.7 is inlined verbatim
- * (Mike's review F16) instead of loaded from cdn.jsdelivr.net. Regenerated with `PF_EMIT=1 npm run simulate`;
+ * (QA finding F16) instead of loaded from cdn.jsdelivr.net. Regenerated with `PF_EMIT=1 npm run simulate`;
  * simulation-results.json came back byte-identical (dcd5537e…) and the html diff is the one <script> tag.
  *
  * simulation-results.json RE-PINNED 2026-10-06 (previous pin dcd5537e…): Pass 2 now scores one step on
- * tile 0, Beef's first tile, instead of the rotating tile nonce % 20 (Mike's review, 6 Oct 2026; src/loader.ts
+ * tile 0, Beef's first tile, instead of the rotating tile nonce % 20 (QA review, 6 Oct 2026; src/loader.ts
  * SIM_FIRST_STEP_TILE). Regenerated with `PF_EMIT=1 npm run simulate`; the pass1_fresh_seeds block came back
  * identical and rtp-convergence.html byte-identical (2633e8f8…), so only the Pass 2 rows and counts moved.
  *
@@ -48,7 +48,7 @@
  *
  * simulation-results.json RE-PINNED 2026-10-19 (previous pin 2ddcc202…): the Pass 1 description said it
  * "Validates independent implementation"; src/rng.ts was then checked against Duel's Verify-tab code, not an
- * independent implementation (Mike's QA, 19 Oct 2026, decision 1). Regenerated with `PF_EMIT=1 npm run
+ * independent implementation (QA, 19 Oct 2026, decision 1). Regenerated with `PF_EMIT=1 npm run
  * simulate`; only that description line moved (git diff: 1 line), rtp-convergence.html came back
  * byte-identical (2633e8f8…).
  *

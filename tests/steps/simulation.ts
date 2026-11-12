@@ -68,7 +68,7 @@ export function run(ctx: VerifyContext): StepResult[] {
   //     SIM_FIRST_STEP_TILE (tile 0), and that tile must be the first stepped tile of every captured
   //     round. Until 2026-10-06 the replay and Pass 2 in src/simulate.ts both checked tile nonce % 20, agreed
   //     with each other, and so could not notice that neither is the tile a Beef round steps on first
-  //     (Mike's review, 6 Oct 2026);
+  //     (QA review, 6 Oct 2026);
   //   • earlyP, lateP and the Test A p are recomputed from the win counts; the flags, the counts
   //     and both binomial p-values are recomputed and must agree with what the artifact states;
   //   • the verdict uses the RECOMPUTED figures, and every rule that can move it is a COUNT tested
@@ -79,7 +79,7 @@ export function run(ctx: VerifyContext): StepResult[] {
   //     window is tested on its own because seed selection need not bias the whole nonce range: a
   //     seed could be chosen on the nonces a player reaches first. A FLAG is a statistical
   //     deviation; on its own it does not establish manipulation.
-  //   • FALSE-ALARM RATES ARE PART OF THE RULE (Mike's review, 6 Oct 2026): a statistical rule may
+  //   • FALSE-ALARM RATES ARE PART OF THE RULE (QA review, 6 Oct 2026): a statistical rule may
   //     move the verdict only if its false-alarm rate on a fair game is stated, at most 5% for a
   //     FLAG and 1% for a FAIL. Each rule's rate is computed below twice, under the rule's own model
   //     (each window's test exactly 5% on a fair seed) and with the exact sizes of the discrete

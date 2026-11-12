@@ -135,7 +135,7 @@ export function run(ctx: VerifyContext): StepResult[] {
   s5Issues.push(...siteIssues);
 
   // ── Step 5, fourth leg: THE OPERATOR'S OWN Verify-tab code, a second check (BEEF-09) ──
-  // Not the source of src/rng.ts (rebuilt from docs/ALGORITHM.md); run to show it agrees. Duel's Beef code panel, pasted by Paulo from the Verify tab on 2026-09-26, vendored verbatim under
+  // Not the source of src/rng.ts (rebuilt from docs/ALGORITHM.md); run to show it agrees. Duel's Beef code panel, pasted by ProvablyFair.org from the Verify tab on 2026-09-26, vendored verbatim under
   // evidence/verify-tab/ and pinned in src/operator-verifier.ts. The pinned runner fills in the file's
   // five "User input values" (clientSeed, serverSeed, nonce, deathPointsCount from the served
   // difficulty_level via DEATH_POINTS_BY_DIFFICULTY, gridSize = GRID_SIZE) and runs it, on EVERY round of

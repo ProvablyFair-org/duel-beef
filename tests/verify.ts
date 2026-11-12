@@ -119,7 +119,7 @@ const results = [
 
 const infoItems: InfoItem[] = statistical.run(ctx);
 
-// ── RTP-CLAIM rule (1.2.0, Methodology v1.1; 1.0.0 agreed on Slack 2026-09-29) ──
+// ── RTP-CLAIM rule (1.2.0, Methodology v1.1; 1.0.0 adopted 2026-09-29) ──
 // The per-setting exact RTP table held to the published claim (src/rtp-settings.ts). The package
 // switch RTP_CLAIM_RULE_ENFORCED is true (D3, 2026-10-14). Status OVERSTATED (a house-side miss) is
 // scored on the step carrying BEEF-19 as an operator-origin FLAG (the profile's policy) and the
@@ -147,7 +147,7 @@ if (rtpOverstated) {
 const passed   = results.filter(r => r.status === 'PASS').length;
 const flags    = results.filter(r => r.status === 'FLAG').length;
 const hardFail = results.filter(r => r.status === 'FAIL').length;
-// INFO (profile policy INFORMATIONAL — the live-sample fit, Mike 2026-09-29): reported, never counted
+// INFO (profile policy INFORMATIONAL — the live-sample fit, adopted 2026-09-29): reported, never counted
 // as a flag, never enters the verdict or the exit code.
 const informational = results.filter(r => r.status === 'INFO').length;
 // A capture-origin FLAG (an auditor-side capture retry that left a nonce gap) is disclosed but

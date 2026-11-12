@@ -10,7 +10,7 @@
  * death points. Through v1.1.0 src/rng.ts followed this file step for step and, from 26 Sep 2026, cited 17
  * of its lines; that code and its citation table were removed on 20 Oct 2026.
  *
- * PROVENANCE. Pasted by Paulo from duel.com → Provably Fair → Verify (Beef) on 2026-09-26 and saved
+ * PROVENANCE. Pasted by ProvablyFair.org from duel.com → Provably Fair → Verify (Beef) on 2026-09-26 and saved
  * verbatim as evidence/verify-tab/duel-verify-tab-beef-2026-09-26.js (committed in 9333460; 3,353
  * bytes, 101 lines). The file is never edited. Until then Beef's Verify-tab code was not in the
  * workspace (BEEF-09 partial). What this does NOT establish: that the Verify button on the live page
